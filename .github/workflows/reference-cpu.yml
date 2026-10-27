@@ -70,6 +70,17 @@ jobs:
           name: stage02-paged-kv-real-checkpoints
           path: benchmarks/results/stage02-real-model-cpu.json
           if-no-files-found: ignore
+      - name: Stage 03 scheduler, eviction and real HF multi-request parity
+        run: |
+          pytest -q tests/test_stage03_scheduler.py tests/test_stage03_batch_engine.py
+          python scripts/stage03_real_model_parity.py
+      - name: Preserve Stage 03 checkpoint correctness
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage03-multirequest-hf-parity
+          path: benchmarks/results/stage03-real-model-cpu.json
+          if-no-files-found: ignore
       - name: Publish raw reference evidence
         if: always()
         uses: actions/upload-artifact@v4
