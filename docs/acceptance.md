@@ -13,7 +13,19 @@
 - [ ] Complete pretrained **Qwen/Qwen3-0.6B** tokenizer/weight comparison on target hardware.
 - [ ] Robust cancellation and device OOM recovery under failure injection.
 
-The validated Stage 01 reference code is merged into `main`. The above unverified criteria are **not** considered PASS. Stage 02 has **not** started.
+The validated Stage 01 reference code is merged into `main`. The above unverified criteria are **not** considered PASS.
+
+## Stage 02: CPU physical-paging correctness PASS
+
+- [x] Independently authored `BlockManager` with generation-stamped handles, finite block pool, request Block Tables and guarded reservation lifecycle.
+- [x] Transactional `begin/commit/abort/release`, conservative COW, stale-handle and replay rejection, deterministic seeded randomized allocations and threaded tests.
+- [x] Physical page tensor store `PagedKVStore`, committed-prefix immutability checks, explicit dtype/shape/device validation, injected mid-write failure and OOM cleanup.
+- [x] GPT-2 and Qwen3 token-exact output parity, preserving the Stage 01 default reference: [real checkpoint run 40484347235](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40484347235) (Stage 02: 21 focused tests and two pinned HF weights).
+- [x] No claims of PagedAttention/speedups; see [ADR 0004](adr/0004-paged-kv-transaction.md).
+- [ ] Direct GPU PagedAttention and asynchronous write fencing: explicitly **OUT OF STAGE 02**.
+- [ ] Matching-hardware vLLM performance baseline remains **NOT RUN**; full Qwen3-0.6B trained checkpoint remains **NOT RUN**.
+
+This passes the **bounded Stage 02 CPU correctness gate**; it does not close earlier hardware-specific gates or release v0.1. Stage 03 continuous batching has not started.
 
 ## Common DoD
 Tests, correctness oracle, SHA-pinned weights and workload, Ruff/MyPy/Pytest, explicit failures and source notices. Never claim vLLM performance without same hardware/loads and reproducible results.
