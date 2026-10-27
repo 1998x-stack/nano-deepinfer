@@ -10,6 +10,7 @@ import torch
 from torch import Tensor
 
 from nano_deepinfer.dense_gpt2 import ModelKV, ReferenceGPT2
+from nano_deepinfer.dense_qwen3 import ReferenceQwen3
 from nano_deepinfer.foundation import (
     Request,
     SamplingParams,
@@ -63,7 +64,7 @@ class LLMEngine:
     """Reference-only model runner. Accepts token IDs to avoid hiding tokenizer state."""
 
     def __init__(
-        self, model: ReferenceGPT2, model_fingerprint: str = "synthetic", eos_token_id: int | None = None
+        self, model: ReferenceGPT2 | ReferenceQwen3, model_fingerprint: str = "synthetic", eos_token_id: int | None = None
     ) -> None:
         if not model_fingerprint:
             raise ValueError("model_fingerprint required")
@@ -77,7 +78,10 @@ class LLMEngine:
         prompt_token_ids: tuple[int, ...],
         sampling: SamplingParams,
         request_id: str | None = None,
+        stop_token_ids: tuple[int, ...] = (),
     ) -> GenerationResult:
+        if any(token < 0 for token in stop_token_ids):
+            raise ValueError("stop token IDs must be nonnegative")
         request = Request(request_id or uuid4().hex, prompt_token_ids, sampling, self.model_fingerprint)
         state = SequenceState(request=request)
         device = next(self.model.parameters()).device
@@ -103,6 +107,9 @@ class LLMEngine:
             state.generated.append(token)
             if token == self.eos_token_id:
                 reason = "eos"
+                break
+            if token in stop_token_ids:
+                reason = "stop_token"
                 break
             if step_id + 1 == sampling.max_new_tokens:
                 break
