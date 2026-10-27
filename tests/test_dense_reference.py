@@ -25,14 +25,14 @@ def test_full_forward_vs_incremental_cache(tiny_model: ReferenceGPT2) -> None:
     with torch.inference_mode():
         full, _ = tiny_model(prompt)
         prefix, cache = tiny_model(prompt[:, :2])
-        logits = [prefix[0, -1]]
+        logits = [(1, prefix[0, -1])]
         for i in range(2, prompt.shape[1]):
             step, cache = tiny_model(prompt[:, i : i + 1], cache)
-            logits.append(step[0, -1])
+            logits.append((i, step[0, -1]))
         assert len(cache) == 2
         assert cache[0][0].shape == (1, 4, 6, 4)
-        for i, step in enumerate(logits, start=1):
-            assert torch.allclose(step, full[0, i - 1], atol=2e-5, rtol=1e-5)
+        for position, step in logits:
+            assert torch.allclose(step, full[0, position], atol=2e-5, rtol=1e-5)
 
 
 def test_full_forward_vs_several_prefill_segments(tiny_model: ReferenceGPT2) -> None:
