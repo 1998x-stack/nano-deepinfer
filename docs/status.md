@@ -1,6 +1,6 @@
 # Verified repository status
 
-**2026-10-27:** Stage 01 **CPU reference core is merged into main** as commit `959815ee1646eb77e8f98a8ca2a11bee37cc15cb`. This is an independently implemented, single-request GPT-2 and Qwen3 Dense reference; not a production inference server.
+**2026-10-27:** Stage 01 CPU reference core is merged. Stage 02 adds an optional, CPU-first transactional physical Paged KV storage path. Stage 01 was merged as commit `959815ee1646eb77e8f98a8ca2a11bee37cc15cb`. This is an independently implemented, single-request GPT-2 and Qwen3 Dense reference; not a production inference server.
 
 | Milestone | Verified status | Evidence |
 | --- | --- | --- |
@@ -11,8 +11,11 @@
 | Real Qwen3 debugging checkpoint | PASS | [model lock](qwen3-model.lock.json): `llamafactory/tiny-random-qwen3@81d6f5f5e05ed53ea8a1d19431266a486e46bbd8` |
 | Qwen/Qwen3-0.6B trained checkpoint CPU/GPU/dtype matrix | **NOT RUN** | hardware/checkpoint gate remains open |
 | vLLM matching-GPU comparative baseline | **NOT RUN / DEFERRED** | [ADR 0003](adr/0003-stage-00-gpu-deferral.md); required for Stage 05 claims |
-| Paged KV, continuous batching, online API, MoE/EP | **NOT IMPLEMENTED** | future Stage 02+ |
+| Stage 02 physical Paged KV, COW transaction, Block Pool and request table | **PASS (CPU, reference path)** | [21 tests + real HF checkpoint parity, CI 40484347235](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40484347235), [ADR 0004](adr/0004-paged-kv-transaction.md) |
+| Direct PagedAttention kernel, continuous batching, online API, MoE/EP | **NOT IMPLEMENTED** | future Stages 03+ / GPU kernel research |
 
-**Gate interpretation:** Stage 00 research/CPU paths complete but *original strict GPU gate remains PARTIAL*. Stage 01 small-model reference core passes; large trained Qwen3 validation and comprehensive cancellation/OOM paths are outstanding. Request to proceed to the next phase authorizes integrating tested research code, not falsely marking those gates complete. **Stage 02 is not started.** No vLLM speedup / GPU throughput or latency comparisons have been made.
+**Gate interpretation:** Stage 00 research/CPU paths complete but *original strict GPU gate remains PARTIAL*. Stage 01 small-model reference core passes; large trained Qwen3 validation and comprehensive cancellation/OOM paths are outstanding. Request to proceed to the next phase authorizes integrating tested research code, not falsely marking those gates complete. **Stage 02 CPU paging correctness passed; Stage 03 is not started.** No vLLM speedup / GPU throughput or latency comparisons have been made.
 
 See [Stage 01 plan and remaining requirements](stages/stage-01.md) and [acceptance](acceptance.md).
+
+**Stage 02 boundary:** the physical page tensor store is real, but the synchronous model runner reconstructs dense KV for attention; no throughput/latency speedup or complete trained Qwen3-0.6B GPU performance is claimed. The actual Stage 02 HF run validates tiny GPT-2 pretrained and tiny Qwen3 random debugging checkpoints only.

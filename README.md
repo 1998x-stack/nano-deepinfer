@@ -4,9 +4,9 @@
 
 [![CI](https://github.com/1998x-stack/nano-deepinfer/actions/workflows/ci.yml/badge.svg)](https://github.com/1998x-stack/nano-deepinfer/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-![Stage](https://img.shields.io/badge/Stage-01%20Dense%20Reference-blue)
+![Stage](https://img.shields.io/badge/Stage-02%20Paged%20KV%20Research-blue)
 
-**Project status: Stage 01 — a working CPU-first, single-request Dense *reference* engine for GPT-2 and Qwen3.** It is **not a production inference server**; it has no paged KV, continuous batching, GPU optimization or distributed execution. No vLLM performance claims are made.
+**Project status: Stage 02 — a CPU-first GPT-2/Qwen3 Dense reference engine with optional transactional *paged physical KV storage*.** It is **not a production inference server**; the attention kernel still materializes dense KV, and there is no continuous batching, GPU PagedAttention, optimized kernel or distributed execution. No vLLM performance claims are made.
 
 **Why?** nano-vLLM makes core inference concepts understandable; vLLM V1 shows robust production-oriented abstractions; DeepInfer studies highly optimized model-specific execution at scale. nano-deepinfer builds an independent, testable learning and research implementation inspired by their publicly documented designs, without treating vLLM or DeepInfer as its runtime.
 
@@ -34,13 +34,13 @@
       Commit / output / metrics
 ```
 
-Stage 00 defines these interfaces; Stage 01 implements single-request dense prefill/decode; stages 02–04 add memory management and continuous batching.
+Stage 00 defines the interfaces; Stage 01 implements single-request Dense prefill/decode; Stage 02 adds optional real physical KV pages; Stages 03–04 plan batching and prefix reuse.
 
 ## Roadmap
 
 | Version | Stages | Planned scope | Status |
 | --- | --- | --- | --- |
-| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01 reference implementation verified; Stage 02–04 pending |
+| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 03–04 pending |
 | `v0.2` | 05–06 | GPU kernels, CUDA Graph, asynchronous steps | Planned |
 | `v0.3` | 07–09 | Toy MoE, expert parallelism, speculative decoding, SWA experiments | Planned |
 | `v1.0` | 10–12 | Serving, reproducible evaluations, optional P/D experiment | Planned |
@@ -59,6 +59,19 @@ python scripts/stage01_qwen3_checkpoint.py --output benchmarks/results/stage01-q
 ```
 
 Stage 01 has two reference models, both with **batch size one**, no streaming/serving, no speedup claim. The CI compares a genuine public tiny GPT-2 pretrained checkpoint and small *randomly initialized* Qwen3 checkpoint to Transformers logits and greedy tokens. Qwen3-0.6B large-checkpoint/accelerator performance tests remain outstanding.
+
+## Try Stage 02: transactional paged KV storage
+
+Stage 02 separates logical token positions from physical fixed-size page IDs. The CPU BlockManager supports request ownership, generation-stamped handles, atomic reserve/commit/abort, a copy-on-write (COW) partial tail, and complete cleanup after cancellation or OOM. The Torch PagedKVStore writes real per-layer K/V pages and reconstructs dense tensors for the existing independent model runner.
+
+```bash
+python -m pip install -e ".[reference,dev]"
+pytest -q tests/test_stage02_block_manager.py tests/test_stage02_paged_kv.py
+python examples/stage02_paged_reference.py
+python scripts/stage02_real_model_parity.py
+```
+
+**Correctness, not performance:** the Stage 01 attention kernel is unchanged; materializing full dense KV each step can be slower. The COW append needs a spare page even when partially occupied. No PagedAttention, prefix sharing or continuous batching has been implemented. See [Stage 02 design/acceptance](docs/stages/stage-02.md) and [ADR 0004](docs/adr/0004-paged-kv-transaction.md). The GPU vLLM comparison and full Qwen3-0.6B trained-checkpoint validation remain outstanding.
 
 ## Stage 00 foundation
 
@@ -87,7 +100,7 @@ The Stage 00 smoke test checks deterministic toy-token processing and creates an
 
 ## Documentation
 
-[Stage 00 tasks](docs/stages/stage-00.md) · [Stage 01 entry criteria](docs/stages/stage-01.md) · [Benchmark methodology](docs/benchmarks.md) · [Upstream code study](docs/upstream-analysis.md) · [Engineering RFC](docs/rfcs/0001-engine-core.md) · [Branch policy](docs/branching.md)
+[Stage 00 tasks](docs/stages/stage-00.md) · [Stage 01](docs/stages/stage-01.md) · [Stage 02](docs/stages/stage-02.md) · [Benchmark methodology](docs/benchmarks.md) · [Upstream code study](docs/upstream-analysis.md) · [Engineering RFC](docs/rfcs/0001-engine-core.md) · [Branch policy](docs/branching.md)
 
 ## Development
 

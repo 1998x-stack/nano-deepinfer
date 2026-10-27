@@ -50,3 +50,9 @@ Every terminal state is final. Cancellation of in-flight GPU execution defers re
 
 See [RFC 0001](rfcs/0001-engine-core.md), [ADR 0001](adr/0001-scope.md), [ADR 0002](adr/0002-step-transaction.md).
 
+
+## Stage 02 implementation: physical page boundary
+
+The CPU `BlockManager` maintains an immutable logical `BlockTable` and generation-stamped physical `BlockHandle` IDs with exclusive ownership, plus an active `Reservation` per request. A reservation claims all necessary physical blocks and, when appending to a partially filled tail, reserves a COW replacement. The Torch `PagedKVStore` writes only reserved pages, validates unchanged committed prefix, then atomically publishes the new table. Errors abort uncommitted pages without modifying previously committed KV. The single-request `LLMEngine` can opt in via `paged_cache`, but the attention kernel still receives reconstructed dense KV. This is a correctness bridge to later PagedAttention work, not a high-performance page-table kernel.
+
+See [ADR 0004](adr/0004-paged-kv-transaction.md) and [Stage 02](stages/stage-02.md). No Stage 03 scheduler or Stage 04 prefix-sharing is present.
