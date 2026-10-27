@@ -1,33 +1,25 @@
 # Acceptance and release quality gates
 
-## Stage 00 exit gates (2026-10-27)
+## Stage 00: design complete, strict exit PARTIAL
+- [x] Upstream commits locked, architecture and RFC, source research, CPU synthetic tests and CI.
+- [x] Pinned genuine pretrained HF tiny GPT-2 CPU reference measured: [run 40468544667](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468544667).
+- [ ] Matched **vLLM GPU** reference performance benchmark: **NOT RUN**. [ADR 0003](adr/0003-stage-00-gpu-deferral.md) defers this required validation to the Stage 05 optimization prerequisite.
 
-- [x] Three upstream full SHAs frozen in `docs/sources.lock.json`.
-- [x] Source research, architecture and interface contracts authored.
-- [x] CPU-only synthetic smoke and reproducible environment schema.
-- [x] Stage 00 CI green on Python 3.11/3.12.
-- [x] **Actual pinned HF pretrained GPT-2 reference executed** (model `sshleifer/tiny-gpt2@5f91d94bd9cd7190a9f3216ff93cd1dd95f2c7be`). Full and cached HF logits align; [successful run](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468544667), raw JSON artifact stored there.
-- [ ] **Real GPU vLLM reference benchmark still not run**. No compatible GPU environment linked for this execution.
-- [ ] Owner reviews and closes strict Stage 00 acceptance, or explicitly documents a limited exception for the missing GPU comparison.
+## Stage 01: core PASS, complete hardware/model exit OPEN
+- [x] Independent GPT-2 and Qwen3 Dense model forward including separate prefill/cache decode; only batch size one, eager/unpaged KV.
+- [x] Greedy, seeded temperature, top-k, top-p, eos and stop token IDs.
+- [x] Tiny pretrained GPT-2 HF logits/generated IDs match; small Qwen3 HF and immutable random-weight checkpoint full/cache/logit/greedy parity: [run 40477183422](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40477183422), [model tests 22 PASS](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40476699366).
+- [x] Reference CI, example, reproducible source/model locks and honest README status.
+- [ ] Complete pretrained **Qwen/Qwen3-0.6B** tokenizer/weight comparison on target hardware.
+- [ ] Robust cancellation and device OOM recovery under failure injection.
 
-**Status: PARTIAL, not PASS.** HF full-vs-cached self-comparison does not establish independent nano engine correctness. Stage 01 prototype may be developed on a PR branch, but must not be declared released or merged until gate resolution.
+The validated Stage 01 reference code is merged into `main`. The above unverified criteria are **not** considered PASS. Stage 02 has **not** started.
 
-## Global Definition of Done
-
-- [ ] New features have independently executable unit, correctness and failure-mode tests.
-- [ ] Ruff, MyPy and Pytest green in the relevant dependency environment.
-- [ ] HF equivalence uses same checkpoint, tokenizer, dtype and documented tolerance.
-- [ ] CPU/GPU timing reports capture environmental constraints, warmup, latency distribution and failures.
-- [ ] Cache and async operations have explicit ownership/rollback invariants when implemented.
-- [ ] Source licenses and notices maintained; README capability claims match actual code.
-- [ ] CI and branch statuses rechecked after merge.
+## Common DoD
+Tests, correctness oracle, SHA-pinned weights and workload, Ruff/MyPy/Pytest, explicit failures and source notices. Never claim vLLM performance without same hardware/loads and reproducible results.
 
 ## Release gates
-
-`v0.1`: Stage 00–04 correctness including a real supported Dense model, paging and batching.
-
-`v0.2`: Stage 05–06 optimized and asynchronous paths with independent reference fallback and A/B evidence.
-
-`v0.3`: Stage 07–09 experimental MoE/speculation/SWA validated against their oracles.
-
-`v1.0`: Stage 10 and 12 reliable single-node service with reproducible release record; Stage 11 optional.
+`v0.1`: Stage 00–04 dense/paged-KV/batching/prefix correctness.
+`v0.2`: Stage 05–06 GPU optimized/async reproducibility.
+`v0.3`: Stage 07–09 MoE/speculation/SWA experimental correctness.
+`v1.0`: Stage 10/12 stable serving/release; Stage 11 optional research.
