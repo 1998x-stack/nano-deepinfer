@@ -201,7 +201,7 @@ class ReferenceQwen3(nn.Module):
             raise ValueError("RoPE scaling variants are not supported yet")
         if getattr(config, "hidden_act", "silu") != "silu":
             raise ValueError("requires SwiGLU/SiLU activation")
-        if getattr(config, "sliding_window", None) is not None:
+        if bool(getattr(config, "use_sliding_window", False)):
             raise ValueError("sliding-window Qwen3 variants are not supported")
         ours = cls(DenseQwen3Config(
             vocab_size=config.vocab_size,
