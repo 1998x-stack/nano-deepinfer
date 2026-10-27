@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "stage": "01",
+  "weights": [
+    {
+      "model_id": "llamafactory/tiny-random-qwen3",
+      "revision_sha": "81d6f5f5e05ed53ea8a1d19431266a486e46bbd8",
+      "purpose": "Random initialized tiny Qwen3 checkpoint for structural parity; not a trained language model"
+    },
+    {
+      "model_id": "sshleifer/tiny-gpt2",
+      "revision_sha": "5f91d94bd9cd7190a9f3216ff93cd1dd95f2c7be",
+      "purpose": "Pretrained GPT-2 for independent reference comparison"
+    }
+  ],
+  "pinned_at": "2026-10-27",
+  "gpu_baseline": "not_run",
+  "qwen3_full_0_6b": "not_run"
+}

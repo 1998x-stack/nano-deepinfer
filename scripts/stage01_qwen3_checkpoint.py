@@ -29,10 +29,10 @@ def main() -> None:
     torch.manual_seed(0)
     torch.set_num_threads(2)
     repo = "llamafactory/tiny-random-qwen3"
-    # A known immutable revision prefix (verified and expanded to full SHA by Hub).
-    revision_prefix = "81d6f5f"
-    full_revision = HfApi().model_info(repo, revision=revision_prefix).sha
-    if full_revision is None or len(full_revision) != 40 or not full_revision.startswith(revision_prefix):
+    # Verified immutable full revision from an actual successful reference CI run.
+    expected_revision = "81d6f5f5e05ed53ea8a1d19431266a486e46bbd8"
+    full_revision = HfApi().model_info(repo, revision=expected_revision).sha
+    if full_revision != expected_revision:
         raise AssertionError("Model revision was not resolved to the intended immutable commit")
     hf = AutoModelForCausalLM.from_pretrained(
         repo, revision=full_revision, torch_dtype=torch.float32, trust_remote_code=False
