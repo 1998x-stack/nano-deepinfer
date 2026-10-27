@@ -111,6 +111,10 @@ class UnifiedScheduler:
                 selected.append(ScheduledWork(rid, view.version, "decode", count,
                                               view.computed_tokens))
             available -= count
+        if selected:
+            # Rotate the next scheduling turn past serviced requests, not merely
+            # a full traversal back to the original FCFS queue position.
+            self._queue.rotate(-len(selected))
         batch = ScheduledBatch(
             self._step, self.max_num_scheduled_tokens,
             self.max_num_scheduled_tokens - available, tuple(selected),
