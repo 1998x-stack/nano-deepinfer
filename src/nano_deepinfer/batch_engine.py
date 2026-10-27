@@ -210,7 +210,7 @@ class ContinuousBatchEngine:
         if not self.pending:
             raise RuntimeError("no active requests")
         views = {
-            rid: RequestView(rid, len(s.context), s.computed, s.version)
+            rid: RequestView(rid, len(s.context), s.computed, s.version, s.computed > 0)
             for rid, s in self._states.items()
             if s.status in ("waiting", "running")
         }
