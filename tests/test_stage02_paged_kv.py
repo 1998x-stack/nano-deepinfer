@@ -24,8 +24,8 @@ def test_page_storage_round_trip_and_release() -> None:
         original = fake_cache(length)
         table = pool.write("a", original)
         assert table.num_tokens == length
-        for expected, actual in zip(original, pool.read("a")):
-            for left, right in zip(expected, actual):
+        for expected, actual in zip(original, pool.read("a"), strict=True):
+            for left, right in zip(expected, actual, strict=True):
                 assert torch.equal(left, right)
         pool.assert_consistent()
     assert pool.release("a")
