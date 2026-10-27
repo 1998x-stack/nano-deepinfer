@@ -1,6 +1,6 @@
 # Stage 02 — Paged KV physical storage and ownership
 
-**Status:** implementation in review; completion is conditioned on CI and model-reference validation. **Stage 03 not started.**
+**Status:** Stage 02 CPU physical-paging correctness verified in GitHub Actions. **Stage 03 not started.** GPU PagedAttention is outside Stage 02.
 
 ## Components
 
@@ -10,8 +10,8 @@
 - [x] `PagedKVStore`: physical K/V tensors, shape/dtype/device validation, page writes and dense readback.
 - [x] Optional `LLMEngine(paged_cache=...)` path; unpaged reference remains default; `finally` cleanup.
 - [x] Randomized allocation, injected physical write faults, stale lease, OOM, threading and two-model token parity tests authored.
-- [ ] CI + real pinned HF checkpoints on committed SHA have passed and evidence recorded.
-- [ ] Release-readiness review and model hardware matrix documented.
+- [x] CI + real pinned HF checkpoints passed; [reference run 40484347235](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40484347235) and [full static/test CI 40484347245](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40484347245).
+- [x] CPU scoped acceptance and model/hardware matrix documented. Trained Qwen3-0.6B and vLLM GPU benchmarks are not run.
 
 ## Strict exit acceptance
 
@@ -29,5 +29,9 @@ pytest -q tests/test_stage02_block_manager.py tests/test_stage02_paged_kv.py
 python examples/stage02_paged_reference.py
 python scripts/stage02_real_model_parity.py
 ```
+
+**Measured verification:** 21 Stage 02 tests passed, and existing 22 Stage 01 model tests passed. The actual pinned `sshleifer/tiny-gpt2` and `llamafactory/tiny-random-qwen3` generated IDs matched the independent dense and paged paths; the second checkpoint contains random debugging weights, not production language capability.
+
+**Performance boundary:** no PagedAttention kernel. The reference path materializes full dense KV and checks committed prefix immutability each append; memory/performance conclusions require a separate controlled experiment.
 
 See [transaction ADR](../adr/0004-paged-kv-transaction.md). Future Stage 03 may add continuous batching, not now.
