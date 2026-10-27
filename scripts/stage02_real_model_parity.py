@@ -49,8 +49,8 @@ def main() -> None:
                 raise AssertionError(f"model logits mismatch: {family} {delta}")
             pool.write("probe", dense_kv)
             restored = pool.read("probe")
-            for expected, actual in zip(dense_kv, restored):
-                for left, right in zip(expected, actual):
+            for expected, actual in zip(dense_kv, restored, strict=True):
+                for left, right in zip(expected, actual, strict=True):
                     if not torch.equal(left, right):
                         raise AssertionError("paged KV roundtrip mismatch")
             pool.release("probe")
