@@ -71,7 +71,7 @@ class QwenAttention(nn.Module):
         self.q_proj = nn.Linear(cfg.hidden_size, cfg.num_heads * cfg.head_dim, bias=cfg.attention_bias)
         self.k_proj = nn.Linear(cfg.hidden_size, cfg.num_kv_heads * cfg.head_dim, bias=cfg.attention_bias)
         self.v_proj = nn.Linear(cfg.hidden_size, cfg.num_kv_heads * cfg.head_dim, bias=cfg.attention_bias)
-        self.o_proj = nn.Linear(cfg.num_heads * cfg.head_dim, cfg.hidden_size, bias=False)
+        self.o_proj = nn.Linear(cfg.num_heads * cfg.head_dim, cfg.hidden_size, bias=cfg.attention_bias)
         self.q_norm = QwenRMSNorm(cfg.head_dim, cfg.rms_eps)
         self.k_norm = QwenRMSNorm(cfg.head_dim, cfg.rms_eps)
 
