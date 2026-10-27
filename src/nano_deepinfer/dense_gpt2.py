@@ -38,8 +38,8 @@ class DenseGPT2Config:
             raise ValueError("norm_eps must be in (0, 1)")
 
 
-type LayerKV = tuple[Tensor, Tensor]
-type ModelKV = tuple[LayerKV, ...]
+LayerKV = tuple[Tensor, Tensor]
+ModelKV = tuple[LayerKV, ...]
 
 
 class ReferenceSelfAttention(nn.Module):
