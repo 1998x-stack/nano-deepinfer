@@ -2,27 +2,29 @@
 
 ## Stage 00 exit gates
 
-- [x] Repository research snapshots pinned by full SHA in `docs/sources.lock.json`.
-- [x] Architecture, provenance mapping, decisions and explicit interface contracts authored.
-- [x] Reproducible synthetic CPU smoke script and environment schema authored.
-- [ ] CPU smoke and tests executed in GitHub Actions on committed SHA and PASS is recorded.
-- [ ] Hugging Face reference baseline executed with actual model checkpoint. **Blocked until transformers/checkpoint are available.**
-- [ ] Independent vLLM baseline executed on compatible GPU. **Blocked pending usable GPU stack.**
-- [ ] Owner reviews CI results and accepts Stage 00 scope.
+- [x] Three upstream full SHAs frozen in `docs/sources.lock.json`.
+- [x] Architecture/source mapping, decision records and explicit interfaces authored.
+- [x] Reproducible CPU synthetic smoke and environment schema.
+- [x] GitHub Actions CI passed on initial Stage 00 merged revision; [main workflow](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40467149468).
+- [ ] HF actual small Dense pretrained-checkpoint baseline executed (model/tokenizer SHA pinned). **NOT RUN**.
+- [ ] Pinned upstream vLLM real inference benchmark in compatible environment. **NOT RUN**.
+- [ ] Stage 00 strict closeout approved with missing external baselines resolved or documented exception.
 
-Stage 00 can be merged as a documented **foundation** even if hardware baselines are deferred, but its strict research exit gate must be marked `PARTIAL`, not falsely marked PASS. Starting Stage 01 should explicitly acknowledge this prerequisite gap.
+**Current strict gate:** PARTIAL, not PASS. Stage 01 has **not** started. CI and synthetic tests do not establish inference correctness.
 
-## Global DoD
+## Global Definition of Done
 
-- [ ] Source checks: Ruff and MyPy; package import and unit pytest.
-- [ ] Deterministic reference correctness per supported model and dtype.
-- [ ] Reliable handling of cancellation, timeout, errors, reservation cleanup when stage applies.
-- [ ] Benchmark artifacts carry model weights SHA, tokenizer SHA, git SHA, seeds, hardware, software, warmup and workload.
-- [ ] Performance regressions reported, not suppressed; optimized code guarded by fallback.
-- [ ] Documentation, compatibility matrix, dependencies and upstream attribution updated.
-- [ ] CI and branch history verified after merge.
+- [ ] Tests for each implemented function, CPU oracle and precise failure semantics.
+- [ ] Ruff, strict MyPy, Pytest, reproducible CI and changes reviewed.
+- [ ] Logits/greedy token exactness tested on same model revision, dtype/tokenizer and backend equivalence when Stage 01 exists.
+- [ ] Cancellation, OOM, double release, async results and rollback tested when mechanisms exist.
+- [ ] Benchmarks record checkpoint/toolchain commit, warmup, repeats, actual resource inventory and failures.
+- [ ] No source copying without LICENSE/NOTICE audit; honest capability README.
+- [ ] Single-step fallback always available; observed regressions reported.
 
 ## Release gates
 
-`v0.1`: Stage 01–04 dense, cache, batching, prefix correctness. `v0.2`: Stage 05–06 reproducible async + optimized vs eager evidence. `v0.3`: Stage 07–09 reference-valid experiments (hardware-gated features explicitly optional). `v1.0`: Stage 10+12 stable single-node API, security/reliability/performance validation; Stage 11 P/D optional.
-
+- `v0.1`: Stages 00–04 with real single-node Dense model and scheduler/cache correctness.
+- `v0.2`: Stages 05–06 with optimized/reference ablation and async safety evidence.
+- `v0.3`: Stages 07–09 with reference-valid experiments; GPU-demanding algorithms may remain experimental.
+- `v1.0`: Stages 10 and 12 required stable single-node API, load/fault/security docs; Stage 11 optional experimental.
