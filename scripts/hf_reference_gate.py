@@ -24,8 +24,8 @@ def main() -> None:
     if not 1 <= args.max_new_tokens <= 64:
         parser.error("max-new-tokens must be between 1 and 64")
 
-    import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    import torch  # type: ignore[import-not-found]
+    from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore[import-not-found]
 
     torch.set_num_threads(2)
     torch.manual_seed(0)
