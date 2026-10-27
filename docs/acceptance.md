@@ -27,6 +27,16 @@ The validated Stage 01 reference code is merged into `main`. The above unverifie
 
 This passes the **bounded Stage 02 CPU correctness gate**; it does not close earlier hardware-specific gates or release v0.1. Stage 03 continuous batching has not started.
 
+## Stage 03: correctness gate in verification
+
+- [x] Deterministic unified token-budget scheduler with FCFS admission, bounded round-robin, per-step request versions and mixed prefill/decode.
+- [x] Multi-request runner with Stage 02 physical block pressure, eviction, recompute, cancel, fault isolation and admission backpressure.
+- [x] CPU 100-request property/real-model tests authored and actual two-checkpoint HF parity workflow configured.
+- [ ] Verify final code SHA against model/test workflows, link raw evidence.
+- [ ] Merge verified PR and fast-forward milestone branch pointers.
+
+**Precise capability:** multi-request logical batching only. Model forwards remain serial per request, no GPU throughput claim. Stage 04 not begun. The Stage 00 vLLM GPU and full trained Qwen3-0.6B gates remain open.
+
 ## Common DoD
 Tests, correctness oracle, SHA-pinned weights and workload, Ruff/MyPy/Pytest, explicit failures and source notices. Never claim vLLM performance without same hardware/loads and reproducible results.
 

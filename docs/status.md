@@ -12,9 +12,10 @@
 | Qwen/Qwen3-0.6B trained checkpoint CPU/GPU/dtype matrix | **NOT RUN** | hardware/checkpoint gate remains open |
 | vLLM matching-GPU comparative baseline | **NOT RUN / DEFERRED** | [ADR 0003](adr/0003-stage-00-gpu-deferral.md); required for Stage 05 claims |
 | Stage 02 physical Paged KV, COW transaction, Block Pool and request table | **PASS (CPU, reference path)** | [21 tests + real HF checkpoint parity, CI 40484347235](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40484347235), [ADR 0004](adr/0004-paged-kv-transaction.md) |
-| Direct PagedAttention kernel, continuous batching, online API, MoE/EP | **NOT IMPLEMENTED** | future Stages 03+ / GPU kernel research |
+| Stage 03 unified scheduler, mixed Prefill/Decode and logical request interleaving | **IMPLEMENTED; final CI review pending** | [Stage 03](stages/stage-03.md), [ADR 0005](adr/0005-unified-scheduler.md) |
+| GPU fused batching, PagedAttention, prefix caching, serving, MoE/EP | **NOT IMPLEMENTED** | Stages 04+ |
 
-**Gate interpretation:** Stage 00 research/CPU paths complete but *original strict GPU gate remains PARTIAL*. Stage 01 small-model reference core passes; large trained Qwen3 validation and comprehensive cancellation/OOM paths are outstanding. Request to proceed to the next phase authorizes integrating tested research code, not falsely marking those gates complete. **Stage 02 CPU paging correctness passed; Stage 03 is not started.** No vLLM speedup / GPU throughput or latency comparisons have been made.
+**Gate interpretation:** Stage 00 research/CPU paths complete but *original strict GPU gate remains PARTIAL*. Stage 01 small-model reference core passes; large trained Qwen3 validation and comprehensive cancellation/OOM paths are outstanding. Request to proceed to the next phase authorizes integrating tested research code, not falsely marking those gates complete. **Stage 02 CPU paging correctness passed; Stage 03 is implemented and undergoing final CI review.** No vLLM speedup / GPU throughput or latency comparisons have been made.
 
 See [Stage 01 plan and remaining requirements](stages/stage-01.md) and [acceptance](acceptance.md).
 

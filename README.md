@@ -4,9 +4,9 @@
 
 [![CI](https://github.com/1998x-stack/nano-deepinfer/actions/workflows/ci.yml/badge.svg)](https://github.com/1998x-stack/nano-deepinfer/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-![Stage](https://img.shields.io/badge/Stage-02%20Paged%20KV%20Research-blue)
+![Stage](https://img.shields.io/badge/Stage-03%20Unified%20Scheduler-blue)
 
-**Project status: Stage 02 — a CPU-first GPT-2/Qwen3 Dense reference engine with optional transactional *paged physical KV storage*.** It is **not a production inference server**; the attention kernel still materializes dense KV, and there is no continuous batching, GPU PagedAttention, optimized kernel or distributed execution. No vLLM performance claims are made.
+**Project status: Stage 03 — CPU-first continuous multi-request scheduling on transactional paged KV storage.** It is **not a production inference server**. Each model call still has batch size one; this is logical request interleaving, not GPU fused-batch execution, CUDA PagedAttention or performance parity with vLLM.
 
 **Why?** nano-vLLM makes core inference concepts understandable; vLLM V1 shows robust production-oriented abstractions; DeepInfer studies highly optimized model-specific execution at scale. nano-deepinfer builds an independent, testable learning and research implementation inspired by their publicly documented designs, without treating vLLM or DeepInfer as its runtime.
 
@@ -40,7 +40,7 @@ Stage 00 defines the interfaces; Stage 01 implements single-request Dense prefil
 
 | Version | Stages | Planned scope | Status |
 | --- | --- | --- | --- |
-| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 03–04 pending |
+| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 03 logical scheduler under CI verification; Stage 04 pending |
 | `v0.2` | 05–06 | GPU kernels, CUDA Graph, asynchronous steps | Planned |
 | `v0.3` | 07–09 | Toy MoE, expert parallelism, speculative decoding, SWA experiments | Planned |
 | `v1.0` | 10–12 | Serving, reproducible evaluations, optional P/D experiment | Planned |
@@ -73,6 +73,18 @@ python scripts/stage02_real_model_parity.py
 
 **Correctness, not performance:** the Stage 01 attention kernel is unchanged; materializing full dense KV each step can be slower. The COW append needs a spare page even when partially occupied. No PagedAttention, prefix sharing or continuous batching has been implemented. See [Stage 02 design/acceptance](docs/stages/stage-02.md) and [ADR 0004](docs/adr/0004-paged-kv-transaction.md). The GPU vLLM comparison and full Qwen3-0.6B trained-checkpoint validation remain outstanding.
 
+## Stage 03: unified request-level scheduling
+
+The independent `UnifiedScheduler` schedules waiting and running requests using one token budget, bounded batch slots and a residency-aware round-robin policy. `ContinuousBatchEngine` supports adding requests during decoding, stop/EOS, per-request RNG, cancellation, admission backpressure and preemption with recomputation from preserved generated tokens.
+
+```bash
+python -m pip install -e ".[dev,reference]"
+pytest -q tests/test_stage03_scheduler.py tests/test_stage03_batch_engine.py
+python scripts/stage03_real_model_parity.py
+```
+
+**Scope boundary:** These are scheduling batches, not a fused GPU model batch. Model forwards run serially with the Stage 01 batch-of-one attention implementation and Stage 02 dense KV materialization. Prefix sharing and optimized chunked prefill remain Stage 04; CUDA kernels are later research. No speedup claim.
+
 ## Stage 00 foundation
 
 ```bash
@@ -100,7 +112,7 @@ The Stage 00 smoke test checks deterministic toy-token processing and creates an
 
 ## Documentation
 
-[Stage 00 tasks](docs/stages/stage-00.md) · [Stage 01](docs/stages/stage-01.md) · [Stage 02](docs/stages/stage-02.md) · [Benchmark methodology](docs/benchmarks.md) · [Upstream code study](docs/upstream-analysis.md) · [Engineering RFC](docs/rfcs/0001-engine-core.md) · [Branch policy](docs/branching.md)
+[Stage 00 tasks](docs/stages/stage-00.md) · [Stage 01](docs/stages/stage-01.md) · [Stage 02](docs/stages/stage-02.md) · [Stage 03](docs/stages/stage-03.md) · [Benchmark methodology](docs/benchmarks.md) · [Upstream code study](docs/upstream-analysis.md) · [Engineering RFC](docs/rfcs/0001-engine-core.md) · [Branch policy](docs/branching.md)
 
 ## Development
 
