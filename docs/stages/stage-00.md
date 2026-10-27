@@ -1,27 +1,26 @@
-# Stage 00 — Research & reproducible engineering foundation
+# Stage 00 — Source research and reproducible foundation
 
-**Status: in progress; no actual LLM performance measured.**  **Estimated effort:** 1–2 weeks. **Prerequisites:** none.
+**Implementation delivered on `main`; strict stage exit = PARTIAL.**
 
-## Work packages
+## Verified work
 
-- [x] S00-01: Freeze nano-vLLM, vLLM V1 and DeepInfer commit SHAs; source/license table and research mapping.
-- [x] S00-02: Research scheduling, KV block, model runner, C++ async boundaries and explicitly identify what is not open-sourced.
-- [x] S00-03: Architecture RFC, model adapter interface, request/StepPlan/StepResult state machine and ADRs.
-- [x] S00-04: Professional README, ROADMAP, docs, NOTICE and milestone/branch policy.
-- [x] S00-05: Installable CPU-only package foundation, lint/type/test CI, deterministic synthetic smoke.
-- [ ] S00-06: Execute HF pretrained Dense comparison on immutable weights and tokenizer.
-- [ ] S00-07: Execute pinned vLLM runtime baseline under adequate compatible GPU.
-- [ ] S00-08: Record CI run and review clean-room reproducibility.
+- [x] S00-01 Pin upstream source commit SHAs and licenses.
+- [x] S00-02 Analyze nano-vLLM, vLLM V1 and DeepInfer execution/source boundaries.
+- [x] S00-03 Write RFC, typed contracts, cache/state architecture and ADRs.
+- [x] S00-04 Document 13 stage deliverables, exit criteria, branch/release policy and README.
+- [x] S00-05 Installable CPU foundation, deterministic synthetic smoke, CI matrix.
+- [x] S00-06 **Run a real pinned HF small Dense checkpoint on CPU**, check full-prefill versus KV-cache incremental logits and publish evidence. [Successful run](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468544667).
+- [ ] S00-07 Compare pinned vLLM inference on an actual compatible GPU and publish raw benchmark evidence.
+- [ ] S00-08 Obtain explicit owner closeout or documented waiver for GPU prerequisite.
 
-## Acceptance / stop conditions
+## Preconditions for Stage 01 acceptance
 
-**Strong gate:** sources locked, design complete, local+CI tests green, baseline.json faithfully reports not_run when missing model/GPU, provenance recorded. **Not acceptable:** generated fake performance numbers, treating toy smoke as real autoregressive inference, beginning Stage 01 merely because scaffolding exists.
+1. Complete S00-07 or record owner-approved constrained exception; leave Stage 00 `PARTIAL` until then.
+2. Stage 01 must implement independently authored model forward, not use HF/vLLM for its runtime execution.
+3. Compare both full-prefill and incremental logits, greedy generated Token IDs, and describe tolerance and model SHA.
+4. Do not claim any vLLM performance improvement without controlled equal-hardware measurements.
 
-## Deliverables
-
-`docs/sources.lock.json`, `docs/upstream-analysis.md`, `docs/rfcs/0001-engine-core.md`, `docs/adr/`, `docs/status.md`, `benchmarks/results/baseline-template.json`, `scripts/stage00_smoke.py`, `scripts/hf_baseline.py`, `tests/`, `.github/workflows/ci.yml`.
-
-## Execution commands
+## Commands
 
 ```bash
 python -m pip install -e ".[dev]"
@@ -31,5 +30,4 @@ ruff check .
 mypy src scripts
 ```
 
-**Next:** Do not start Stage 01 until missing hardware/model baseline gates are either satisfied or explicitly approved as a documented exception.
-
+The separate CPU reference workflow installs PyTorch and Transformers and writes a real-model baseline artifact. This is **not** an independent nano-deepinfer implementation.
