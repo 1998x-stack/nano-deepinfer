@@ -36,7 +36,7 @@ def test_unmeasured_baseline_is_explicit() -> None:
 
 def test_readme_never_claims_inference_is_ready() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "not yet a working model inference server" in readme
+    assert "not a production inference server" in readme
     assert "Stage 00" in readme
 
 
