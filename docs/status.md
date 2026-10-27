@@ -1,19 +1,18 @@
-# Development status and verified evidence
+# Verified repository status
 
-**Date:** 2026-10-27 · **Current merged milestone:** Stage 00 foundation. **Strict Stage 00 exit:** PARTIAL; real vLLM GPU comparison remains pending.
+**2026-10-27:** Stage 01 **CPU reference core is merged into main** as commit `959815ee1646eb77e8f98a8ca2a11bee37cc15cb`. This is an independently implemented, single-request GPT-2 and Qwen3 Dense reference; not a production inference server.
 
-| Requirement | Evidence | Result |
+| Milestone | Verified status | Evidence |
 | --- | --- | --- |
-| Three upstream SHAs pinned | [source lock](sources.lock.json) | Done |
-| Source study, architecture, contracts and decisions | [upstream analysis](upstream-analysis.md), [RFC](rfcs/0001-engine-core.md) | Done |
-| CPU synthetic reference and provenance checks | `tests/test_foundation.py`, `tests/test_stage00_artifacts.py` | PASS in CI |
-| Real pretrained HF checkpoint on CPU | [Pinned tiny-GPT-2 model](hf-model.lock.json), [workflow run 40468544667](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468544667) | **PASS**: Transformers full-prefix vs incremental KV logits within 1e-4 |
-| Raw real-reference JSON | [Workflow artifacts](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468544667) → `stage00-pinned-hf-pretrained-baseline` | Published |
-| Base CI after merge | [Stage 00 main CI](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468688608) | PASS |
-| Real vLLM GPU baseline vs same checkpoint | compatible GPU runtime not provided | **NOT RUN** |
-| nano-deepinfer versus Transformers actual model | Stage 01 research PR, not part of Stage 00 merged code | **NOT IN MAIN** |
-| GPU throughput / TTFT / TPOT measurements | no GPU benchmark | **NOT RUN; no speedup claim** |
+| Upstream research / RFC / Stage 00 CPU smoke | PASS | [source lock](sources.lock.json), [Architecture](architecture.md) |
+| Stage 00 pretrained HF CPU cached/full reference | PASS | [CI 40468544667](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40468544667) |
+| Stage 01 GPT-2 independent logits/greedy-token parity | PASS, tiny pretrained checkpoint | [CI 40477183422](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40477183422) |
+| Stage 01 Qwen3 independent full/cache/greedy parity | PASS, small random/debug weights | [CI 40476699366](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40476699366) (22 focused tests), [latest reference CI 40477183422](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40477183422) |
+| Real Qwen3 debugging checkpoint | PASS | [model lock](qwen3-model.lock.json): `llamafactory/tiny-random-qwen3@81d6f5f5e05ed53ea8a1d19431266a486e46bbd8` |
+| Qwen/Qwen3-0.6B trained checkpoint CPU/GPU/dtype matrix | **NOT RUN** | hardware/checkpoint gate remains open |
+| vLLM matching-GPU comparative baseline | **NOT RUN / DEFERRED** | [ADR 0003](adr/0003-stage-00-gpu-deferral.md); required for Stage 05 claims |
+| Paged KV, continuous batching, online API, MoE/EP | **NOT IMPLEMENTED** | future Stage 02+ |
 
-**Important distinction:** Stage 00 HF run validates **Transformers against itself** with an immutable pretrained checkpoint and full-vs-cached computation; it does not prove independent nano-deepinfer correctness. The Stage 01 branch may contain its own tests but remains unmerged pending Stage 00 closeout policy.
+**Gate interpretation:** Stage 00 research/CPU paths complete but *original strict GPU gate remains PARTIAL*. Stage 01 small-model reference core passes; large trained Qwen3 validation and comprehensive cancellation/OOM paths are outstanding. Request to proceed to the next phase authorizes integrating tested research code, not falsely marking those gates complete. **Stage 02 is not started.** No vLLM speedup / GPU throughput or latency comparisons have been made.
 
-**Next strict gate:** execute GPU vLLM reference benchmark or obtain documented owner-approved scope exception. Retain `PARTIAL` until then. See [acceptance](acceptance.md).
+See [Stage 01 plan and remaining requirements](stages/stage-01.md) and [acceptance](acceptance.md).
