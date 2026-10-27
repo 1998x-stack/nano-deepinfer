@@ -65,7 +65,10 @@ def test_failed_page_write_aborts_without_changing_published_kv() -> None:
 
     class BrokenPage:
         def __getitem__(self, index: object):
-            raise RuntimeError("injected write fault")
+            # Allow committed prefix reads; fail *after* reservation on stage-copy.
+            if isinstance(index, tuple):
+                raise RuntimeError("injected write fault")
+            return original[index]
 
     pool._keys[0] = BrokenPage()
     with pytest.raises(RuntimeError, match="injected"):
