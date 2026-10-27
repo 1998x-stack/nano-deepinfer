@@ -40,7 +40,7 @@ Stage 00 defines the interfaces; Stage 01 implements single-request Dense prefil
 
 | Version | Stages | Planned scope | Status |
 | --- | --- | --- | --- |
-| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01 passed; Stage 02 under CI validation; Stage 03–04 pending |
+| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 03–04 pending |
 | `v0.2` | 05–06 | GPU kernels, CUDA Graph, asynchronous steps | Planned |
 | `v0.3` | 07–09 | Toy MoE, expert parallelism, speculative decoding, SWA experiments | Planned |
 | `v1.0` | 10–12 | Serving, reproducible evaluations, optional P/D experiment | Planned |
