@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "stage": "00",
+  "purpose": "Real, public HF checkpoint (not nano inference)",
+  "model_id": "sshleifer/tiny-gpt2",
+  "revision_sha": "5f91d94bd9cd7190a9f3216ff93cd1dd95f2c7be",
+  "framework": "transformers",
+  "target_dtype": "float32",
+  "platform": "CPU",
+  "notes": "Immutable revision verified from HF tree; output must come from CI artifact, never fabricated."
+}

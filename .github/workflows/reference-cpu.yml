@@ -1,0 +1,53 @@
+name: Pinned Hugging Face CPU reference
+on:
+  push:
+    branches: [main, 'feat/stage-00-hf-reference']
+    paths:
+      - '.github/workflows/reference-cpu.yml'
+      - 'scripts/hf_reference_gate.py'
+      - 'src/**'
+      - 'pyproject.toml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/reference-cpu.yml'
+      - 'scripts/hf_reference_gate.py'
+      - 'src/**'
+      - 'pyproject.toml'
+  workflow_dispatch:
+jobs:
+  hf-reference-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU PyTorch and pinned Transformers
+        run: |
+          python -m pip install 'torch==2.6.0' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.51.3' 'huggingface_hub>=0.30,<1'
+          python -m pip install -e .
+      - name: Run immutable HF model forward/cache baseline
+        env:
+          HF_HUB_DISABLE_TELEMETRY: '1'
+        run: python scripts/hf_reference_gate.py --max-new-tokens 8 --output benchmarks/results/hf-tiny-gpt2-cpu.json
+      - name: Check evidence schema
+        run: |
+          python - <<'PY'
+          import json
+          p = "benchmarks/results/hf-tiny-gpt2-cpu.json"
+          result = json.load(open(p))
+          assert result["status"] == "passed"
+          assert len(result["generated_token_ids"]) == 8
+          assert result["max_abs_logit_error"] < 1e-4
+          assert result["nano_deepinfer_parity"] == "not_tested_until_stage01"
+          PY
+      - name: Publish raw reference evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage00-pinned-hf-pretrained-baseline
+          path: benchmarks/results/hf-tiny-gpt2-cpu.json
+          if-no-files-found: ignore
