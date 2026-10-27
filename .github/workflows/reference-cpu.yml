@@ -18,7 +18,7 @@ on:
 jobs:
   hf-reference-cpu:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,14 +46,17 @@ jobs:
           PY
       - name: Independently validate Stage 01 Dense model against HF checkpoint
         run: |
-          pytest -q tests/test_dense_reference.py tests/test_hf_gpt2_parity.py
+          pytest -q tests/test_dense_reference.py tests/test_hf_gpt2_parity.py tests/test_qwen3_reference.py
           python scripts/stage01_benchmark.py --output benchmarks/results/stage01-hf-gpt2-cpu.json
+          python scripts/stage01_qwen3_checkpoint.py --output benchmarks/results/stage01-hf-qwen3-cpu.json
       - name: Publish Stage 01 measured evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: stage01-nano-gpt2-hf-parity
-          path: benchmarks/results/stage01-hf-gpt2-cpu.json
+          path: |
+            benchmarks/results/stage01-hf-gpt2-cpu.json
+            benchmarks/results/stage01-hf-qwen3-cpu.json
           if-no-files-found: ignore
       - name: Publish raw reference evidence
         if: always()
