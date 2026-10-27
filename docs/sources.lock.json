@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "locked_at_utc": "2026-10-27",
+  "source_method": "GitHub connector commits/main and source files read at pinned commit",
+  "upstreams": [
+    {
+      "key": "nano-vllm",
+      "repo": "GeeeekExplorer/nano-vllm",
+      "commit": "bb823b3e06983d71485a8e1f23715ebd87d98ef8",
+      "license": "MIT",
+      "paths": [
+        "nanovllm/engine/scheduler.py",
+        "nanovllm/engine/block_manager.py",
+        "nanovllm/engine/model_runner.py",
+        "nanovllm/engine/llm_engine.py"
+      ]
+    },
+    {
+      "key": "vllm-v1",
+      "repo": "vllm-project/vllm",
+      "commit": "ace90aeb247a757d32fd8e37e02eb60ba8fd0a46",
+      "license": "Apache-2.0",
+      "paths": [
+        "vllm/v1/core/sched/scheduler.py",
+        "vllm/v1/engine/core.py",
+        "vllm/v1/core/kv_cache_manager.py"
+      ]
+    },
+    {
+      "key": "deepinfer",
+      "repo": "deepseek-ai/DeepInfer",
+      "commit": "553741557a57df44a46fb3ab72b6aafeaf945337",
+      "license": "Apache-2.0",
+      "paths": [
+        "deepinfer/engine/llm_engine.py",
+        "csrc/engine/scheduler.hpp",
+        "csrc/engine/block_manager.hpp",
+        "doc/inference_deployment_qa.md",
+        "README.md"
+      ]
+    }
+  ],
+  "notes": "Pinned commits are provenance snapshots, not vendored source."
+}
