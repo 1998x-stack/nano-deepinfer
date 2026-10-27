@@ -81,11 +81,14 @@ class ContinuousBatchEngine:
         *,
         max_num_scheduled_tokens: int = 32,
         max_num_seqs: int = 8,
+        max_pending_requests: int = 1024,
         eos_token_id: int | None = None,
         model_fingerprint: str = "stage03",
     ) -> None:
         if not model_fingerprint:
             raise ValueError("model_fingerprint must be nonempty")
+        if max_pending_requests < 1:
+            raise ValueError("max_pending_requests must be positive")
         heads = (
             model.config.num_kv_heads if isinstance(model, ReferenceQwen3)
             else model.config.num_heads
@@ -106,6 +109,7 @@ class ContinuousBatchEngine:
         self.cache = cache
         self.scheduler = UnifiedScheduler(max_num_scheduled_tokens, max_num_seqs)
         self.model_fingerprint = model_fingerprint
+        self.max_pending_requests = max_pending_requests
         self.eos_token_id = eos_token_id
         self._states: dict[str, _Sequence] = {}
         self._results: dict[str, GenerationResult] = {}
@@ -126,6 +130,8 @@ class ContinuousBatchEngine:
     ) -> None:
         if request_id in self._states:
             raise ValueError("duplicate request ID including completed requests")
+        if self.pending >= self.max_pending_requests:
+            raise RuntimeError("admission backpressure: active request limit reached")
         if any(token < 0 for token in stop_token_ids):
             raise ValueError("stop token IDs must be nonnegative")
         if len(prompt_token_ids) > self.model.config.max_positions:
