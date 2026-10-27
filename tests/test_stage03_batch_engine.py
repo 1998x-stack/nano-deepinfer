@@ -55,11 +55,8 @@ def test_multi_request_results_equal_isolated_reference(family: str, temp: float
         assert result[rid].finish_reason == "length"
     assert engine.cache.manager.stats().used == 0
     engine.assert_consistent()
-    assert any(
-        any(evt.kind == "decode" for evt in step.events)
-        and any(evt.kind == "prefill" for evt in step.events)
-        for step in engine.history
-    )
+    assert any(evt.kind == "decode" for step in engine.history for evt in step.events)
+    assert any(evt.kind == "prefill" for step in engine.history for evt in step.events)
     assert all(step.scheduled_tokens <= step.token_budget for step in engine.history)
 
 
