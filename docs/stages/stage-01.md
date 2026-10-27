@@ -16,9 +16,9 @@
 ## Verified evidence
 
 - [CI job: Stage 01 Qwen3/GPT-2 CPU tests](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40476699366): 22 focused tests PASS, HF tiny GPT-2 greedy-token benchmark PASS, HF tiny-random Qwen3 checkpoint PASS.
-- Qwen3 debug weights: \`llamafactory/tiny-random-qwen3\` at \`81d6f5f5e05ed53ea8a1d19431266a486e46bbd8\`. This is a real fetched weight file, but **random**, not a meaningful trained chat model.
-- Base Stage 00 genuine Transformers checkpoint: \`sshleifer/tiny-gpt2@5f91d94bd9cd7190a9f3216ff93cd1dd95f2c7be\`.
-- \`benchmarks/results/\` contains **real GitHub Actions artifacts**, not invented performance numbers.
+- Qwen3 debug weights: `llamafactory/tiny-random-qwen3` at `81d6f5f5e05ed53ea8a1d19431266a486e46bbd8`. This is a real fetched weight file, but **random**, not a meaningful trained chat model.
+- Base Stage 00 genuine Transformers checkpoint: `sshleifer/tiny-gpt2@5f91d94bd9cd7190a9f3216ff93cd1dd95f2c7be`.
+- `benchmarks/results/` contains **real GitHub Actions artifacts**, not invented performance numbers.
 
 ## Known limitations / unfinished gates
 
@@ -31,15 +31,15 @@
 
 ## Scope-control decision
 
-The user's latest request to continue to the next stage authorizes proceeding with implementation despite an unavailable GPU comparison; it is **not a claim that the original GPU gate was met**. Treat Stage 00 as \`PARTIAL / GPU BENCHMARK DEFERRED\`, Stage 01 as \`REFERENCE CORE PASS / FULL MODEL GATE OPEN\`, and keep feature work isolated until unit and reference CI passes. See [ADR 0003](../adr/0003-stage-00-gpu-deferral.md).
+The user's latest request to continue to the next stage authorizes proceeding with implementation despite an unavailable GPU comparison; it is **not a claim that the original GPU gate was met**. Treat Stage 00 as `PARTIAL / GPU BENCHMARK DEFERRED`, Stage 01 as `REFERENCE CORE PASS / FULL MODEL GATE OPEN`, and keep feature work isolated until unit and reference CI passes. See [ADR 0003](../adr/0003-stage-00-gpu-deferral.md).
 
 ## Commands
 
-\`\`\`bash
+```bash
 python -m pip install -e ".[reference,dev]"
 python examples/stage01_reference.py
 pytest -q tests/test_dense_reference.py tests/test_hf_gpt2_parity.py tests/test_qwen3_reference.py
 python scripts/stage01_qwen3_checkpoint.py --output benchmarks/results/stage01-qwen3.json
-\`\`\`
+```
 
 No deployment claims or speedup claims are accepted from one-shot CPU timings.
