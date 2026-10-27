@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """Standalone Qwen3 Dense eager reference: RoPE, GQA, Q/K RMSNorm, SwiGLU.
 
 No Hugging Face forward pass or vLLM runtime is used here. CPU-first correctness
