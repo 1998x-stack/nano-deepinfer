@@ -1,6 +1,6 @@
 # Stage 03 — Unified token-budget scheduling (CPU reference)
 
-**Status:** Implemented, awaiting final CI evidence and merge. **Stage 04 not started.**
+**Status:** CPU logical scheduling correctness verified by GitHub Actions; PR merge is the remaining delivery gate. **Stage 04 not started.**
 
 ## Delivery
 
@@ -11,7 +11,7 @@
 - [x] Cancellation, per-request failure isolation, bounded admission/backpressure, terminal results, zero-leak cleanup and step history
 - [x] Scheduler tests for 100-request fairness and exact token budgets; real Dense GPT-2/Qwen3 tests for 100-request completion, late arrival, cancellation, OOM, preemption, crash isolation and serial oracle token equality
 - [x] Pinned tiny GPT-2 pretrained and tiny random Qwen3 real checkpoints included in CPU HF workflow
-- [ ] CI results verified on final code SHA, raw evidence recorded and PR merged
+- [x] 17 Stage 03 focused tests and pinned HF GPT-2/Qwen3 multi-request correctness PASS: [reference workflow 40489283022](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40489283022); [CI 40489283080](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40489283080). Raw JSON artifact stored in workflow. PR merge pending
 
 ## Acceptance
 
