@@ -85,6 +85,16 @@ class PagedKVStore:
                 original = self.manager.table(request_id)
             if target < original.num_tokens:
                 raise ValueError("cache length cannot regress")
+            if original.num_tokens:
+                # The Stage 01 model must never silently rewrite committed prefix KV.
+                # This conservative reference check intentionally materializes it.
+                prefix = self.read(request_id)
+                for (committed_k, committed_v), (new_k, new_v) in zip(
+                    prefix, dense, strict=True
+                ):
+                    if (not torch.equal(committed_k, new_k[:, :, :original.num_tokens, :])
+                            or not torch.equal(committed_v, new_v[:, :, :original.num_tokens, :])):
+                        raise ValueError("committed KV prefix was changed")
             reservation = self.manager.begin(request_id, target)
         except Exception:
             if created:
