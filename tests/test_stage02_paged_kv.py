@@ -39,6 +39,23 @@ def test_page_storage_round_trip_and_release() -> None:
     assert pool.manager.stats().used == 0
 
 
+def test_committed_prefix_cannot_be_silently_modified() -> None:
+    pool = PagedKVStore(5, 4, 2, 2, 4)
+    pool.write("r", fake_cache(3))
+    original = pool.manager.table("r")
+    larger = list(fake_cache(5))
+    k, v = larger[0]
+    corrupted = k.clone()
+    corrupted[0, 0, 0, 0] += 1
+    larger[0] = (corrupted, v)
+    with pytest.raises(ValueError, match="committed KV prefix"):
+        pool.write("r", tuple(larger))
+    assert pool.manager.table("r") == original
+    assert pool.manager.stats().pending == 0
+    pool.assert_consistent()
+    pool.release("r")
+
+
 def test_failed_page_write_aborts_without_changing_published_kv() -> None:
     pool = PagedKVStore(6, 4, 2, 2, 4)
     pool.write("one", fake_cache(3))
