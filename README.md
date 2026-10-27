@@ -51,12 +51,12 @@ Detailed plan: [ROADMAP](ROADMAP.md) · [Architecture](docs/architecture.md) · 
 
 The lightweight eager runner supports GPT-2 and Qwen3 **weights**, prefill, incremental unpaged per-layer KV, greedy and seeded sampling. It does not use vLLM or Hugging Face to execute forward passes; Hugging Face is used only to load weights and independently verify results.
 
-\`\`\`bash
+```bash
 python -m pip install -e ".[reference,dev]"
 python examples/stage01_reference.py
 pytest -q tests/test_dense_reference.py tests/test_hf_gpt2_parity.py tests/test_qwen3_reference.py
 python scripts/stage01_qwen3_checkpoint.py --output benchmarks/results/stage01-qwen3.json
-\`\`\`
+```
 
 Stage 01 has two reference models, both with **batch size one**, no streaming/serving, no speedup claim. The CI compares a genuine public tiny GPT-2 pretrained checkpoint and small *randomly initialized* Qwen3 checkpoint to Transformers logits and greedy tokens. Qwen3-0.6B large-checkpoint/accelerator performance tests remain outstanding.
 
