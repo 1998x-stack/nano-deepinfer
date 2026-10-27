@@ -13,7 +13,8 @@ from nano_deepinfer.foundation import SamplingParams  # noqa: E402
 
 
 def fake_cache(length: int):
-    ar = torch.arange(length * 8, dtype=torch.float32).view(1, 2, length, 4)
+    # Simulate true autoregressive KV: prior positions never change as length grows.
+    ar = torch.arange(2 * 128 * 4, dtype=torch.float32).view(1, 2, 128, 4)[:, :, :length, :]
     return tuple((ar + 100 * i, -ar - 100 * i) for i in range(2))
 
 
