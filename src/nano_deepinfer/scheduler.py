@@ -20,6 +20,7 @@ class RequestView:
     total_context_tokens: int
     computed_tokens: int
     version: int
+    resident: bool = False
 
     def __post_init__(self) -> None:
         if not self.request_id or self.version < 0:
@@ -95,9 +96,12 @@ class UnifiedScheduler:
         selected: list[ScheduledWork] = []
         # Visit every entry at most once; picked and unpicked entries rotate
         # together, without duplicating an ID within one scheduling step.
-        for _ in range(len(self._queue)):
-            rid = self._queue.popleft()
-            self._queue.append(rid)
+        order = list(self._queue)
+        # Prefer resident requests so new arrivals cannot continually evict
+        # unfinished decoders under severe page pressure. This is bounded
+        # residency priority, not absolute global FCFS completion order.
+        order.sort(key=lambda rid: not active[rid].resident)
+        for rid in order:
             if available == 0 or len(selected) == self.max_num_seqs:
                 continue
             view = active[rid]
