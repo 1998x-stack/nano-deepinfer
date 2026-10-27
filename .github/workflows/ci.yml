@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches: [main, 'v0.1', 'v0.2', 'v0.3', 'v1.0', 'feat/**']
+  pull_request:
+    branches: [main]
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Stage 00 dev requirements
+        run: python -m pip install -e '.[dev]'
+      - name: Lint
+        run: ruff check .
+      - name: Static types
+        run: mypy src scripts
+      - name: Test
+        run: pytest -q
+      - name: CPU synthetic smoke
+        run: python scripts/stage00_smoke.py --output benchmarks/results/stage00-smoke.json
+      - name: Validate smoke result
+        run: python -c "import json; r=json.load(open('benchmarks/results/stage00-smoke.json')); assert r['status']=='passed' and r['llm_benchmark_status']=='not_run'"
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage00-smoke-py${{ matrix.python-version }}
+          path: benchmarks/results/stage00-smoke.json
+          if-no-files-found: ignore
