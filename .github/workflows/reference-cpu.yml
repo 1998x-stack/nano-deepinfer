@@ -58,6 +58,18 @@ jobs:
             benchmarks/results/stage01-hf-gpt2-cpu.json
             benchmarks/results/stage01-hf-qwen3-cpu.json
           if-no-files-found: ignore
+      - name: Verify Stage 02 transactional physical KV and real-model token parity
+        run: |
+          pytest -q tests/test_stage02_block_manager.py tests/test_stage02_paged_kv.py
+          python examples/stage02_paged_reference.py
+          python scripts/stage02_real_model_parity.py
+      - name: Preserve Stage 02 measured correctness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage02-paged-kv-real-checkpoints
+          path: benchmarks/results/stage02-real-model-cpu.json
+          if-no-files-found: ignore
       - name: Publish raw reference evidence
         if: always()
         uses: actions/upload-artifact@v4
