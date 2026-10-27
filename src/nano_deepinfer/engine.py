@@ -9,6 +9,7 @@ from uuid import uuid4
 import torch
 from torch import Tensor
 
+from nano_deepinfer.cache.paged_kv import PagedKVStore
 from nano_deepinfer.dense_gpt2 import ModelKV, ReferenceGPT2
 from nano_deepinfer.dense_qwen3 import ReferenceQwen3
 from nano_deepinfer.foundation import (
@@ -64,13 +65,25 @@ class LLMEngine:
     """Reference-only model runner. Accepts token IDs to avoid hiding tokenizer state."""
 
     def __init__(
-        self, model: ReferenceGPT2 | ReferenceQwen3, model_fingerprint: str = "synthetic", eos_token_id: int | None = None
+        self, model: ReferenceGPT2 | ReferenceQwen3, model_fingerprint: str = "synthetic", eos_token_id: int | None = None,
+        paged_cache: PagedKVStore | None = None,
     ) -> None:
         if not model_fingerprint:
             raise ValueError("model_fingerprint required")
         self.model = model.eval()
         self.model_fingerprint = model_fingerprint
         self.eos_token_id = eos_token_id
+        if paged_cache is not None:
+            cfg = model.config
+            layers = cfg.num_layers
+            heads = cfg.num_kv_heads if isinstance(model, ReferenceQwen3) else cfg.num_heads
+            dim = cfg.head_dim if isinstance(model, ReferenceQwen3) else cfg.hidden_size // cfg.num_heads
+            if (paged_cache.num_layers, paged_cache.kv_heads, paged_cache.head_dim) != (layers, heads, dim):
+                raise ValueError("paged cache dimensions do not match model")
+            parameter = next(model.parameters())
+            if paged_cache.dtype != parameter.dtype or paged_cache.device != parameter.device:
+                raise ValueError("paged cache device/dtype do not match model")
+        self.paged_cache = paged_cache
 
     @torch.inference_mode()
     def generate(
@@ -88,42 +101,60 @@ class LLMEngine:
         rng = torch.Generator(device=device).manual_seed(sampling.seed or 0)
         if len(prompt_token_ids) > self.model.config.max_positions:
             raise ValueError("prompt exceeds model context")
-        inputs = torch.tensor([list(prompt_token_ids)], device=device, dtype=torch.long)
-        logits, cache = self.model(inputs)
-        state.cache = cache
-        state.computed_tokens = len(prompt_token_ids)
-        last_logits = logits[0, -1, :]
-        reason = "length"
-        for step_id in range(sampling.max_new_tokens):
-            plan = StepPlan(
-                step_id=step_id,
-                request_versions=((request.request_id, step_id),),
-                token_budget=1,
+        try:
+            inputs = torch.tensor([list(prompt_token_ids)], device=device, dtype=torch.long)
+            logits, cache = self.model(inputs)
+            if self.paged_cache is not None:
+                self.paged_cache.write(request.request_id, cache)
+            else:
+                state.cache = cache
+            state.computed_tokens = len(prompt_token_ids)
+            last_logits = logits[0, -1, :]
+            reason = "length"
+            for step_id in range(sampling.max_new_tokens):
+                plan = StepPlan(
+                    step_id=step_id,
+                    request_versions=((request.request_id, step_id),),
+                    token_budget=1,
+                )
+                token = sample_next(last_logits, sampling, rng)
+                validate_step_result(
+                    plan, StepResult(
+                        step_id=step_id, request_versions=plan.request_versions, worker_ack=True
+                    )
+                )
+                state.generated.append(token)
+                if token == self.eos_token_id:
+                    reason = "eos"
+                    break
+                if token in stop_token_ids:
+                    reason = "stop_token"
+                    break
+                if step_id + 1 == sampling.max_new_tokens:
+                    break
+                if state.computed_tokens + 1 > self.model.config.max_positions:
+                    reason = "context_limit"
+                    break
+                next_ids = torch.tensor([[token]], device=device, dtype=torch.long)
+                active_cache = (
+                    self.paged_cache.read(request.request_id)
+                    if self.paged_cache is not None else state.cache
+                )
+                next_logits, updated_cache = self.model(next_ids, cache=active_cache)
+                if self.paged_cache is not None:
+                    self.paged_cache.write(request.request_id, updated_cache)
+                else:
+                    state.cache = updated_cache
+                state.computed_tokens += 1
+                last_logits = next_logits[0, -1, :]
+            state.finished = True
+            return GenerationResult(
+                request_id=request.request_id,
+                prompt_token_ids=request.prompt_token_ids,
+                generated_token_ids=tuple(state.generated),
+                finish_reason=reason,
             )
-            token = sample_next(last_logits, sampling, rng)
-            validate_step_result(
-                plan, StepResult(step_id=step_id, request_versions=plan.request_versions, worker_ack=True)
-            )
-            state.generated.append(token)
-            if token == self.eos_token_id:
-                reason = "eos"
-                break
-            if token in stop_token_ids:
-                reason = "stop_token"
-                break
-            if step_id + 1 == sampling.max_new_tokens:
-                break
-            if state.computed_tokens + 1 > self.model.config.max_positions:
-                reason = "context_limit"
-                break
-            next_ids = torch.tensor([[token]], device=device, dtype=torch.long)
-            next_logits, state.cache = self.model(next_ids, cache=state.cache)
-            state.computed_tokens += 1
-            last_logits = next_logits[0, -1, :]
-        state.finished = True
-        return GenerationResult(
-            request_id=request.request_id,
-            prompt_token_ids=request.prompt_token_ids,
-            generated_token_ids=tuple(state.generated),
-            finish_reason=reason,
-        )
+        finally:
+            if self.paged_cache is not None:
+                # Both success and exception paths must release physical pages.
+                self.paged_cache.release(request.request_id)
