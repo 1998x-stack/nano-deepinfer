@@ -16,7 +16,6 @@ from nano_deepinfer.cache.block_manager import (
     BlockManager,
     BlockTable,
     KVStateError,
-    Reservation,
 )
 
 DenseKV: TypeAlias = tuple[tuple[Tensor, Tensor], ...]
