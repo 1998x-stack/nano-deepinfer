@@ -156,3 +156,18 @@ def test_100_requests_complete_without_deadlock_or_duplicate_token() -> None:
     assert all(result.finish_reason == "length" for result in results.values())
     assert engine.cache.manager.stats().free == 10
     engine.assert_consistent()
+
+
+def test_bounded_admission_backpressure() -> None:
+    engine = make_engine()
+    engine.max_pending_requests = 2
+    params = SamplingParams(max_new_tokens=1)
+    engine.add_request("a", (1, 2), params)
+    engine.add_request("b", (1, 2), params)
+    with pytest.raises(RuntimeError, match="backpressure"):
+        engine.add_request("c", (1, 2), params)
+    assert engine.cancel("a")
+    engine.add_request("c", (1, 2), params)
+    assert engine.pending == 2
+    engine.run()
+    engine.assert_consistent()
