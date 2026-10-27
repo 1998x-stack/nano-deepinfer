@@ -144,7 +144,7 @@ class ReferenceGPT2(nn.Module):
         return logits, tuple(next_caches)
 
     @classmethod
-    def from_hf_gpt2(cls, hf_model: Any) -> "ReferenceGPT2":
+    def from_hf_gpt2(cls, hf_model: Any) -> ReferenceGPT2:
         """Import GPT-2 **weights**, never HF forward computation into nano runtime."""
         cfg = hf_model.config
         if cfg.model_type != "gpt2":
