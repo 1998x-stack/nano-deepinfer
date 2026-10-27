@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "stage": "00",
+  "type": "real_model_inference_baseline",
+  "status": "not_run",
+  "reason": "No model checkpoint or compatible GPU benchmark performed in this run",
+  "model": {
+    "id": null,
+    "revision_sha": null,
+    "tokenizer_revision_sha": null,
+    "precision": null
+  },
+  "environment": {
+    "python": null,
+    "pytorch": null,
+    "transformers": null,
+    "gpu": null,
+    "git_commit": null
+  },
+  "workload": {
+    "prompt_token_ids": null,
+    "max_new_tokens": null,
+    "temperature": 0,
+    "seed": 0
+  },
+  "metrics": {
+    "ttft_ms": null,
+    "tpot_ms": null,
+    "generated_tokens_per_second": null,
+    "peak_vram_bytes": null
+  },
+  "correctness": {
+    "hf_token_exact": null,
+    "notes": "Must execute identical model weights to validate"
+  }
+}
