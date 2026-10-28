@@ -16,7 +16,9 @@ from nano_deepinfer.cache.block_manager import (
     BlockManager,
     BlockTable,
     KVStateError,
+    KVCapacityError,
 )
+from nano_deepinfer.cache.prefix_cache import CacheNamespace, PrefixCache, PrefixHit
 
 DenseKV: TypeAlias = tuple[tuple[Tensor, Tensor], ...]
 
@@ -39,10 +41,17 @@ class PagedKVStore:
         *,
         dtype: torch.dtype = torch.float32,
         device: str | torch.device = "cpu",
+        max_cached_blocks: int = 0,
     ) -> None:
         if num_layers < 1 or kv_heads < 1 or head_dim < 1:
             raise ValueError("invalid KV tensor dimensions")
         self.manager = BlockManager(num_blocks, block_size)
+        if max_cached_blocks < 0:
+            raise ValueError("max_cached_blocks must be nonnegative")
+        self.prefix_cache = (
+            PrefixCache(self.manager, max_cached_blocks)
+            if max_cached_blocks else None
+        )
         self.num_layers = num_layers
         self.kv_heads = kv_heads
         self.head_dim = head_dim
@@ -95,7 +104,14 @@ class PagedKVStore:
                     if (not torch.equal(committed_k, new_k[:, :, :original.num_tokens, :])
                             or not torch.equal(committed_v, new_v[:, :, :original.num_tokens, :])):
                         raise ValueError("committed KV prefix was changed")
-            reservation = self.manager.begin(request_id, target)
+            while True:
+                try:
+                    reservation = self.manager.begin(request_id, target)
+                    break
+                except KVCapacityError:
+                    # Cached pages are evictable; live request references are not.
+                    if self.prefix_cache is None or not self.prefix_cache.evict_one():
+                        raise
         except Exception:
             if created:
                 self.manager.release(request_id)
@@ -143,11 +159,35 @@ class PagedKVStore:
             result.append((key, val))
         return tuple(result)
 
+    def publish_prefix(
+        self, request_id: str, namespace: CacheNamespace,
+        tokens: tuple[int, ...], last_logits: Tensor,
+    ) -> bool:
+        if self.prefix_cache is None:
+            return False
+        table = self.manager.table(request_id)
+        return self.prefix_cache.publish(namespace, tokens, table, last_logits)
+
+    def attach_prefix(
+        self, request_id: str, namespace: CacheNamespace,
+        prompt_tokens: tuple[int, ...],
+    ) -> PrefixHit | None:
+        if self.prefix_cache is None:
+            return None
+        return self.prefix_cache.attach_longest(request_id, namespace, prompt_tokens)
+
+    def clear_prefix(self, tenant_id: str | None = None) -> int:
+        if self.prefix_cache is None:
+            return 0
+        return self.prefix_cache.clear(tenant_id)
+
     def release(self, request_id: str) -> bool:
         return self.manager.release(request_id)
 
     def assert_consistent(self) -> None:
         self.manager.assert_consistent()
+        if self.prefix_cache is not None:
+            self.prefix_cache.assert_consistent()
 
     @property
     def reserved_bytes(self) -> int:
