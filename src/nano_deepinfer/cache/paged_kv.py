@@ -15,8 +15,8 @@ from torch import Tensor
 from nano_deepinfer.cache.block_manager import (
     BlockManager,
     BlockTable,
-    KVStateError,
     KVCapacityError,
+    KVStateError,
 )
 from nano_deepinfer.cache.prefix_cache import CacheNamespace, PrefixCache, PrefixHit
 
