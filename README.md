@@ -6,7 +6,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 ![Stage](https://img.shields.io/badge/Stage-04%20Shared%20Prefix%20Research-blue)
 
-**Project status: Stage 04 — CPU-first continuous request scheduling with optional namespace-isolated physical prefix sharing.** It is **not a production inference server**. Each model call still has batch size one; this is logical request interleaving, not GPU fused-batch execution, CUDA PagedAttention or performance parity with vLLM.
+**Project status: Stage 04 — CPU-first continuous request scheduling with optional namespace-isolated physical prefix sharing (15 focused tests and frozen small-model HF parity passed).** It is **not a production inference server**. Each model call still has batch size one; this is logical request interleaving, not GPU fused-batch execution, CUDA PagedAttention or performance parity with vLLM.
 
 **Why?** nano-vLLM makes core inference concepts understandable; vLLM V1 shows robust production-oriented abstractions; DeepInfer studies highly optimized model-specific execution at scale. nano-deepinfer builds an independent, testable learning and research implementation inspired by their publicly documented designs, without treating vLLM or DeepInfer as its runtime.
 
@@ -34,13 +34,13 @@
       Commit / output / metrics
 ```
 
-Stage 00 defines contracts; Stage 01 implements single-request Dense prefill/decode; Stage 02 adds physical KV pages; Stage 03 implements continuous logical request scheduling; Stage 04 adds optional shared-prefix cache and chunk-size limits.
+Stage 00 defines contracts; Stage 01 implements single-request Dense prefill/decode; Stage 02 adds physical KV pages; Stage 03 implements continuous logical request scheduling; Stage 04 adds optional shared-prefix cache and chunk-size limits. The original vLLM GPU baseline and full trained Qwen3-0.6B checks are still outstanding.
 
 ## Roadmap
 
 | Version | Stages | Planned scope | Status |
 | --- | --- | --- | --- |
-| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 03 verified; Stage 04 under model CI; v0.1 not yet released |
+| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 00–04 CPU research paths verified; v0.1 release gates remain open |
 | `v0.2` | 05–06 | GPU kernels, CUDA Graph, asynchronous steps | Planned |
 | `v0.3` | 07–09 | Toy MoE, expert parallelism, speculative decoding, SWA experiments | Planned |
 | `v1.0` | 10–12 | Serving, reproducible evaluations, optional P/D experiment | Planned |

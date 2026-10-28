@@ -1,6 +1,6 @@
 # Stage 04 — Chunked Prefill and shared prefix cache
 
-**Status:** Code implemented in `feat/stage-04-prefix-cache`; model-reference CI / review is the merge gate.
+**Status:** CPU correctness verified on frozen GPT-2 and Qwen3 tiny checkpoints. PR #10 merge remains the delivery gate.
 
 ## Deliverables
 
@@ -12,7 +12,7 @@
 - [x] Configurable `max_prefill_chunk_size` limit within the unified token budget; Stage 03 logic for mixed prefill/decode preserved.
 - [x] CPU tests for namespace isolation, stale and shared handles, pinned physical ownership, COW, evicted-but-live readers, chunk size and GPT-2/Qwen3 cached-versus-reference Token parity.
 - [x] Pinned public GPT-2 pretrained and tiny random Qwen3 reference script with actual raw CPU latency repetitions, before/after hit counters and full token ID oracle.
-- [ ] CI and real model run green on final PR SHA with raw JSON artifact archived.
+- [x] Stage 04: 15 focused tests PASS; Stage 01/02/03 regressions: 22/21/17 PASS; actual pretrained HF CPU [run 40616756299](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40616756299) stored raw JSON artifacts including three latency repeats per model/path.
 - [ ] Review and merge to main; milestone branch pointers fast-forwarded.
 
 ## Strict CPU correctness acceptance
@@ -31,6 +31,10 @@ python -m pip install -e ".[dev,reference]"
 pytest -q tests/test_stage04_prefix_index.py tests/test_stage04_prefix_runtime.py
 python scripts/stage04_real_model_parity.py
 ```
+
+## Verified measurement semantics
+
+The benchmark samples actual elapsed CPU wall time for the same pinned model, batch-of-one engine and repeated prompt workload, and separately reports prefix hit count and reused tokens. These raw numbers are not GPU TTFT/TPOT, nor an industry speedup estimate; prefix lookup, tensor materialization and page ownership overhead can outweigh skipped Prefill in other workloads. See [the archived workflow artifact](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40616756299).
 
 ## Deliberate deferrals
 

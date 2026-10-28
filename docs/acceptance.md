@@ -37,13 +37,13 @@ This passes the **bounded Stage 02 CPU correctness gate**; it does not close ear
 
 **Precise capability:** multi-request logical batching only. Model forwards remain serial per request, no GPU throughput claim. Stage 04 implementation is in review; no GPU performance claims. The Stage 00 vLLM GPU and full trained Qwen3-0.6B gates remain open.
 
-## Stage 04: physical shared-prefix correctness under review
+## Stage 04: physical shared-prefix CPU correctness PASS
 
 - [x] Aligned full-block shared-prefix index with SHA-256 full namespace and source token equality.
 - [x] Cache-owned page pins, request attach, reference-counted BlockManager, LRU eviction and COW.
 - [x] Tenant/model/tokenizer/position/dtype/adapter isolation, opt-in fallback, chunk cap and last-logit reuse.
 - [x] CPU unit, edge, eviction, isolation and Dense GPT-2/Qwen3 token parity tests written.
-- [ ] Confirm final PR commit has green CPU HF reference and Python 3.11/3.12 base CI, raw latency artifacts uploaded.
+- [x] Stage 04 15 focused tests, genuine GPT-2 and tiny random Qwen3 checkpoint token parity, three CPU repeats, raw JSON artifact: [reference run 40616756299](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40616756299). Python 3.11/3.12 foundation push CI also passed.
 - [ ] Merge reviewed PR and update milestone branch pointers.
 
 Full trained Qwen3-0.6B and same-hardware vLLM GPU verification remain **NOT RUN**; v0.1 release is not authorized.
