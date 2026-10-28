@@ -6,7 +6,7 @@ scheduling (Stage 03), and no CUDA-native PagedAttention (Stage 05).
 
 from __future__ import annotations
 
-from collections import deque
+from collections import Counter, deque
 from dataclasses import dataclass, field
 from math import ceil
 from threading import RLock
@@ -66,7 +66,8 @@ class BlockManager:
     A partially occupied last block is copied-on-write before appending
     tokens. Failed writes can then abort without corrupting committed data.
 
-    For now ref_count is 0 or 1: prefix sharing is a separate future stage.
+    Stage 04 prefix cache pins whole pages and shares them by refcount.
+    Tail writes always copy on write.
     """
 
     def __init__(self, num_blocks: int, block_size: int) -> None:
@@ -78,6 +79,7 @@ class BlockManager:
         self._free: deque[int] = deque(range(num_blocks))
         self._generations = [0] * num_blocks
         self._refs = [0] * num_blocks
+        self._pins: Counter[BlockHandle] = Counter()
         self._owners: dict[str, _Record] = {}
         self._next_id = 0
 
@@ -112,18 +114,64 @@ class BlockManager:
     def _put(self, handle: BlockHandle) -> None:
         if not self.is_live(handle):
             raise KVStateError("stale or already released block")
-        if self._refs[handle.block_id] != 1:
-            raise AssertionError("Stage 02 never shares blocks")
-        self._refs[handle.block_id] = 0
-        self._free.append(handle.block_id)
+        self._refs[handle.block_id] -= 1
+        if self._refs[handle.block_id] == 0:
+            self._free.append(handle.block_id)
 
     def is_live(self, handle: BlockHandle) -> bool:
         with self._lock:
             return (
                 0 <= handle.block_id < self.num_blocks
                 and self._generations[handle.block_id] == handle.generation
-                and self._refs[handle.block_id] == 1
+                and self._refs[handle.block_id] > 0
             )
+
+    def pin(self, blocks: tuple[BlockHandle, ...]) -> None:
+        """Create a cache-owned reference for each immutable physical KV page."""
+        with self._lock:
+            if len(set(blocks)) != len(blocks) or any(
+                not self.is_live(block) for block in blocks
+            ):
+                raise KVStateError("stale or duplicate blocks cannot be pinned")
+            for block in blocks:
+                self._refs[block.block_id] += 1
+                self._pins[block] += 1
+
+    def unpin(self, blocks: tuple[BlockHandle, ...]) -> None:
+        with self._lock:
+            if len(set(blocks)) != len(blocks) or any(
+                self._pins[block] == 0 for block in blocks
+            ):
+                raise KVStateError("unbalanced cache unpin")
+            for block in blocks:
+                self._pins[block] -= 1
+                if self._pins[block] == 0:
+                    del self._pins[block]
+                self._put(block)
+
+    def attach_prefix(
+        self, request_id: str, blocks: tuple[BlockHandle, ...], num_tokens: int
+    ) -> BlockTable:
+        """Attach an immutable full-block prefix to a NEW request."""
+        with self._lock:
+            if not request_id or request_id in self._owners:
+                raise KVStateError("invalid or duplicate request")
+            if (
+                num_tokens < 1
+                or num_tokens % self.block_size
+                or len(blocks) != num_tokens // self.block_size
+                or len(set(blocks)) != len(blocks)
+                or any(not self.is_live(block) for block in blocks)
+            ):
+                raise KVStateError("invalid prefix page table")
+            for block in blocks:
+                self._refs[block.block_id] += 1
+            self._owners[request_id] = _Record(num_tokens, list(blocks))
+            return self.table(request_id)
+
+    def ref_count(self, block: BlockHandle) -> int:
+        with self._lock:
+            return self._refs[block.block_id] if self.is_live(block) else 0
 
     def begin(self, request_id: str, target_tokens: int) -> Reservation:
         """Atomically allocate pages for a new total length (not a delta)."""
@@ -206,7 +254,7 @@ class BlockManager:
         with self._lock:
             return PoolStats(
                 self.num_blocks,
-                sum(self._refs),
+                sum(ref > 0 for ref in self._refs),
                 len(self._free),
                 len(self._owners),
                 sum(r.pending is not None for r in self._owners.values()),
@@ -232,14 +280,15 @@ class BlockManager:
                     if len(pending.proposed) != ceil(pending.target_tokens / self.block_size):
                         raise AssertionError("reservation table length mismatch")
                     live.extend(pending.fresh)
-            ids = [b.block_id for b in live]
-            if len(ids) != len(set(ids)):
-                raise AssertionError("duplicate live ownership")
-            for block in live:
-                if not self.is_live(block):
-                    raise AssertionError("stale handle still owned")
-            for idx in range(self.num_blocks):
-                if self._refs[idx] != (idx in ids) or (idx in free) == (idx in ids):
-                    raise AssertionError("free/refcount/ownership disagree")
-            if len(free) + len(live) != self.num_blocks:
-                raise AssertionError("total page count mismatch")
+            actual_refs: Counter[BlockHandle] = Counter(live) + self._pins
+            for handle, count in actual_refs.items():
+                if count < 1 or not self.is_live(handle):
+                    raise AssertionError("stale or unowned live reference")
+            expected = [0] * self.num_blocks
+            for handle, count in actual_refs.items():
+                expected[handle.block_id] += count
+            if self._refs != expected:
+                raise AssertionError("reference ledger mismatch")
+            occupied = {handle.block_id for handle in actual_refs}
+            if set(free) & occupied or len(free) + len(occupied) != self.num_blocks:
+                raise AssertionError("free list and live block count mismatch")
