@@ -81,6 +81,17 @@ jobs:
           name: stage03-multirequest-hf-parity
           path: benchmarks/results/stage03-real-model-cpu.json
           if-no-files-found: ignore
+      - name: Stage 04 Prefix Cache, COW, isolation and pinned real model tests
+        run: |
+          pytest -q tests/test_stage04_prefix_index.py tests/test_stage04_prefix_runtime.py
+          python scripts/stage04_real_model_parity.py
+      - name: Preserve Stage 04 empirical CPU correctness and latencies
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage04-prefix-cache-cpu-evidence
+          path: benchmarks/results/stage04-real-model-cpu.json
+          if-no-files-found: ignore
       - name: Publish raw reference evidence
         if: always()
         uses: actions/upload-artifact@v4
