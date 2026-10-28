@@ -1,6 +1,6 @@
 # Stage 04 — Chunked Prefill and shared prefix cache
 
-**Status:** CPU correctness verified on frozen GPT-2 and Qwen3 tiny checkpoints. PR #10 merge remains the delivery gate.
+**Status:** Stage 04 CPU correctness verified and merged to `main` via [PR #10](https://github.com/1998x-stack/nano-deepinfer/pull/10), merge commit `d154d14b905fbd682745d517392b5d9204a5cb0c`. Release v0.1 is blocked by inherited full-model/GPU verification.
 
 ## Deliverables
 
@@ -13,7 +13,7 @@
 - [x] CPU tests for namespace isolation, stale and shared handles, pinned physical ownership, COW, evicted-but-live readers, chunk size and GPT-2/Qwen3 cached-versus-reference Token parity.
 - [x] Pinned public GPT-2 pretrained and tiny random Qwen3 reference script with actual raw CPU latency repetitions, before/after hit counters and full token ID oracle.
 - [x] Stage 04: 15 focused tests PASS; Stage 01/02/03 regressions: 22/21/17 PASS; actual pretrained HF CPU [run 40616756299](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40616756299) stored raw JSON artifacts including three latency repeats per model/path.
-- [ ] Review and merge to main; milestone branch pointers fast-forwarded.
+- [x] PR #10 reviewed and merged after Python 3.11/3.12 and pinned HF CI green: [final model run 40617005359](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40617005359). Milestone branch pointers are managed separately and are not release tags.
 
 ## Strict CPU correctness acceptance
 
