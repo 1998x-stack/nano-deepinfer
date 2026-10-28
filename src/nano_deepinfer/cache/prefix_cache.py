@@ -15,7 +15,7 @@ from threading import RLock
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from torch import Tensor
+    from torch import Tensor  # type: ignore[import-not-found]
 
 from nano_deepinfer.cache.block_manager import (
     BlockHandle,
