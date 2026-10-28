@@ -40,7 +40,7 @@ Stage 00 defines contracts; Stage 01 implements single-request Dense prefill/dec
 
 | Version | Stages | Planned scope | Status |
 | --- | --- | --- | --- |
-| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 00–04 CPU research paths verified; v0.1 release gates remain open |
+| `v0.1` | 00–04 | Dense offline engine, paged KV, batching, prefix reuse | Stage 01+02 CPU correctness verified; Stage 00–04 CPU correctness merged; v0.1 release gates still open |
 | `v0.2` | 05–06 | GPU kernels, CUDA Graph, asynchronous steps | Planned |
 | `v0.3` | 07–09 | Toy MoE, expert parallelism, speculative decoding, SWA experiments | Planned |
 | `v1.0` | 10–12 | Serving, reproducible evaluations, optional P/D experiment | Planned |

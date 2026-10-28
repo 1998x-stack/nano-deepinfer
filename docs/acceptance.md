@@ -44,7 +44,7 @@ This passes the **bounded Stage 02 CPU correctness gate**; it does not close ear
 - [x] Tenant/model/tokenizer/position/dtype/adapter isolation, opt-in fallback, chunk cap and last-logit reuse.
 - [x] CPU unit, edge, eviction, isolation and Dense GPT-2/Qwen3 token parity tests written.
 - [x] Stage 04 15 focused tests, genuine GPT-2 and tiny random Qwen3 checkpoint token parity, three CPU repeats, raw JSON artifact: [reference run 40616756299](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40616756299). Python 3.11/3.12 foundation push CI also passed.
-- [ ] Merge reviewed PR and update milestone branch pointers.
+- [x] Stage 04 [PR #10](https://github.com/1998x-stack/nano-deepinfer/pull/10) merged at `d154d14b905fbd682745d517392b5d9204a5cb0c` with [final HF model workflow](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40617005359) and Python 3.11/3.12 checks green. Version branches remain pointers until synchronized; no release tag.
 
 Full trained Qwen3-0.6B and same-hardware vLLM GPU verification remain **NOT RUN**; v0.1 release is not authorized.
 
