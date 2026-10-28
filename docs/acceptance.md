@@ -35,7 +35,18 @@ This passes the **bounded Stage 02 CPU correctness gate**; it does not close ear
 - [x] 17 focused Stage 03 tests and pinned two-model HF greedy parity passed: [reference run 40489283022](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40489283022), [CI 40489283080](https://github.com/1998x-stack/nano-deepinfer/actions/runs/40489283080); raw correctness artifact uploaded.
 - [x] [PR #8](https://github.com/1998x-stack/nano-deepinfer/pull/8) merged after green CPU CI; `main`, `v0.1`, `v0.2`, `v0.3`, `v1.0` updated to `5dfa0ef4a89d2645b588dd4179333f40bfa9ac43`. These are planning branches, **not** release tags.
 
-**Precise capability:** multi-request logical batching only. Model forwards remain serial per request, no GPU throughput claim. Stage 04 not begun. The Stage 00 vLLM GPU and full trained Qwen3-0.6B gates remain open.
+**Precise capability:** multi-request logical batching only. Model forwards remain serial per request, no GPU throughput claim. Stage 04 implementation is in review; no GPU performance claims. The Stage 00 vLLM GPU and full trained Qwen3-0.6B gates remain open.
+
+## Stage 04: physical shared-prefix correctness under review
+
+- [x] Aligned full-block shared-prefix index with SHA-256 full namespace and source token equality.
+- [x] Cache-owned page pins, request attach, reference-counted BlockManager, LRU eviction and COW.
+- [x] Tenant/model/tokenizer/position/dtype/adapter isolation, opt-in fallback, chunk cap and last-logit reuse.
+- [x] CPU unit, edge, eviction, isolation and Dense GPT-2/Qwen3 token parity tests written.
+- [ ] Confirm final PR commit has green CPU HF reference and Python 3.11/3.12 base CI, raw latency artifacts uploaded.
+- [ ] Merge reviewed PR and update milestone branch pointers.
+
+Full trained Qwen3-0.6B and same-hardware vLLM GPU verification remain **NOT RUN**; v0.1 release is not authorized.
 
 ## Common DoD
 Tests, correctness oracle, SHA-pinned weights and workload, Ruff/MyPy/Pytest, explicit failures and source notices. Never claim vLLM performance without same hardware/loads and reproducible results.
