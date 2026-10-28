@@ -57,11 +57,17 @@ class ScheduledBatch:
 class UnifiedScheduler:
     """Fair admission planner. Does not hold KV blocks or execute models."""
 
-    def __init__(self, max_num_scheduled_tokens: int, max_num_seqs: int) -> None:
+    def __init__(
+        self, max_num_scheduled_tokens: int, max_num_seqs: int,
+        max_prefill_chunk_size: int | None = None,
+    ) -> None:
         if max_num_scheduled_tokens < 1 or max_num_seqs < 1:
             raise ValueError("scheduler budgets must be positive")
+        if max_prefill_chunk_size is not None and max_prefill_chunk_size < 1:
+            raise ValueError("max_prefill_chunk_size must be positive")
         self.max_num_scheduled_tokens = max_num_scheduled_tokens
         self.max_num_seqs = max_num_seqs
+        self.max_prefill_chunk_size = max_prefill_chunk_size or max_num_scheduled_tokens
         self._queue: deque[str] = deque()
         self._live: set[str] = set()
         self._step = 0
@@ -107,7 +113,7 @@ class UnifiedScheduler:
             view = active[rid]
             remaining = view.total_context_tokens - view.computed_tokens
             if remaining:
-                count = min(remaining, available)
+                count = min(remaining, available, self.max_prefill_chunk_size)
                 selected.append(ScheduledWork(rid, view.version, "prefill", count,
                                               view.computed_tokens))
             else:

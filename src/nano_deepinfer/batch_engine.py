@@ -16,6 +16,7 @@ from torch import Tensor
 
 from nano_deepinfer.cache.block_manager import KVCapacityError
 from nano_deepinfer.cache.paged_kv import PagedKVStore
+from nano_deepinfer.cache.prefix_cache import CacheNamespace
 from nano_deepinfer.dense_gpt2 import ReferenceGPT2
 from nano_deepinfer.dense_qwen3 import ReferenceQwen3
 from nano_deepinfer.engine import GenerationResult, sample_next
@@ -82,6 +83,8 @@ class ContinuousBatchEngine:
         max_num_scheduled_tokens: int = 32,
         max_num_seqs: int = 8,
         max_pending_requests: int = 1024,
+        max_prefill_chunk_size: int | None = None,
+        prefix_namespace: CacheNamespace | None = None,
         eos_token_id: int | None = None,
         model_fingerprint: str = "stage03",
     ) -> None:
@@ -105,9 +108,21 @@ class ContinuousBatchEngine:
             or cache.device != param.device
         ):
             raise ValueError("physical KV cache and model geometry/device mismatch")
+        if (cache.prefix_cache is None) != (prefix_namespace is None):
+            raise ValueError("prefix cache and explicit namespace must be enabled together")
+        if prefix_namespace is not None and (
+            prefix_namespace.model_revision != model_fingerprint
+            or prefix_namespace.dtype != str(cache.dtype)
+        ):
+            raise ValueError("prefix namespace must match model revision and KV dtype")
+        self.prefix_namespace = prefix_namespace
+        self.prefix_hits = 0
+        self.reused_prefix_tokens = 0
         self.model = model.eval()
         self.cache = cache
-        self.scheduler = UnifiedScheduler(max_num_scheduled_tokens, max_num_seqs)
+        self.scheduler = UnifiedScheduler(
+            max_num_scheduled_tokens, max_num_seqs, max_prefill_chunk_size
+        )
         self.model_fingerprint = model_fingerprint
         self.max_pending_requests = max_pending_requests
         self.eos_token_id = eos_token_id
@@ -141,8 +156,22 @@ class ContinuousBatchEngine:
         )
         device = next(self.model.parameters()).device
         rng = torch.Generator(device=device).manual_seed(sampling.seed or 0)
-        self._states[request_id] = _Sequence(request, rng, stop_token_ids)
-        self.scheduler.add(request_id)
+        state = _Sequence(request, rng, stop_token_ids)
+        if self.prefix_namespace is not None:
+            hit = self.cache.attach_prefix(
+                request_id, self.prefix_namespace, prompt_token_ids
+            )
+            if hit is not None:
+                state.computed = hit.matched_tokens
+                state.last_logits = hit.last_logits
+                self.prefix_hits += 1
+                self.reused_prefix_tokens += hit.matched_tokens
+        try:
+            self.scheduler.add(request_id)
+            self._states[request_id] = state
+        except BaseException:
+            self.cache.release(request_id)
+            raise
 
     def cancel(self, request_id: str) -> bool:
         state = self._states.get(request_id)
@@ -245,6 +274,18 @@ class ContinuousBatchEngine:
         rid = work.request_id
         device = next(self.model.parameters()).device
         if work.kind == "prefill":
+            if state.computed == 0 and self.prefix_namespace is not None:
+                hit = self.cache.attach_prefix(
+                    rid, self.prefix_namespace, state.request.prompt_token_ids
+                )
+                if hit is not None:
+                    state.computed = hit.matched_tokens
+                    state.last_logits = hit.last_logits
+                    state.version += 1
+                    self.prefix_hits += 1
+                    self.reused_prefix_tokens += hit.matched_tokens
+                    events.append(StepEvent(rid, "prefill", 0, reason="prefix_hit"))
+                    return
             context = state.context
             fragment = context[
                 state.computed:state.computed + work.token_count
@@ -256,6 +297,15 @@ class ContinuousBatchEngine:
             state.computed += len(fragment)
             state.last_logits = logits[0, -1]
             state.version += 1
+            if (
+                self.prefix_namespace is not None
+                and not state.generated
+                and state.computed == len(state.request.prompt_token_ids)
+            ):
+                self.cache.publish_prefix(
+                    rid, self.prefix_namespace, state.request.prompt_token_ids,
+                    state.last_logits,
+                )
             events.append(StepEvent(rid, "prefill", len(fragment)))
             return
 

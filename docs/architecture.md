@@ -55,4 +55,8 @@ See [RFC 0001](rfcs/0001-engine-core.md), [ADR 0001](adr/0001-scope.md), [ADR 00
 
 The CPU `BlockManager` maintains an immutable logical `BlockTable` and generation-stamped physical `BlockHandle` IDs with exclusive ownership, plus an active `Reservation` per request. A reservation claims all necessary physical blocks and, when appending to a partially filled tail, reserves a COW replacement. The Torch `PagedKVStore` writes only reserved pages, validates unchanged committed prefix, then atomically publishes the new table. Errors abort uncommitted pages without modifying previously committed KV. The single-request `LLMEngine` can opt in via `paged_cache`, but the attention kernel still receives reconstructed dense KV. This is a correctness bridge to later PagedAttention work, not a high-performance page-table kernel.
 
-See [ADR 0004](adr/0004-paged-kv-transaction.md) and [Stage 02](stages/stage-02.md). No Stage 03 scheduler or Stage 04 prefix-sharing is present.
+See [ADR 0004](adr/0004-paged-kv-transaction.md) and [Stage 02](stages/stage-02.md). Stage 03 adds logical request-level scheduling; Stage 04 adds opt-in namespace-isolated shared prefix page ownership.
+
+## Stage 04 reference integration
+
+A full-block prefix is represented by a content/namespace digest and cache-owned pin references to physical `BlockHandle`s. A request attaches its own references and can read shared physical pages. `BlockManager.assert_consistent` audits pins, per-request refs and pending reservations. On LRU eviction, only the cache pin goes away. The Stage 03 multi-request executor can restore cached logits for exact prompt hits, or run only the uncached suffix; the scheduler also supports an explicit prefill chunk cap. See [ADR 0006](adr/0006-shared-prefix.md). This remains serial per-request model execution, not GPU PagedAttention.
