@@ -63,7 +63,7 @@ class CacheNamespace:
 @dataclass(frozen=True, slots=True)
 class PrefixHit:
     matched_tokens: int
-    last_logits: "Tensor"
+    last_logits: Tensor
     key: str
 
 
@@ -71,7 +71,7 @@ class PrefixHit:
 class _Entry:
     tokens: tuple[int, ...]
     blocks: tuple[BlockHandle, ...]
-    last_logits: "Tensor"
+    last_logits: Tensor
     namespace: CacheNamespace
 
 
@@ -129,7 +129,7 @@ class PrefixCache:
         namespace: CacheNamespace,
         tokens: tuple[int, ...],
         table: BlockTable,
-        last_logits: "Tensor",
+        last_logits: Tensor,
     ) -> bool:
         """Pin a completed aligned prefix; no mutation of an existing key."""
         if (
